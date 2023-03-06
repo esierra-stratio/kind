@@ -46,7 +46,7 @@ type KEOSDescriptor struct {
 		ClusterID string `yaml:"cluster_id"`
 		Dns       struct {
 			ExternalDns struct {
-				Enabled *bool `yaml:"enabled,omitempty"`
+				Enabled *bool `yaml:"enabled"`
 			} `yaml:"external_dns,omitempty"`
 		} `yaml:"dns,omitempty"`
 		Domain          string `yaml:"domain"`
@@ -84,6 +84,7 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 
 	// Keos
 	keosDescriptor.Keos.ClusterID = descriptorFile.ClusterID
+	keosDescriptor.Keos.K8sInstallation = false
 	keosDescriptor.Keos.Domain = descriptorFile.Keos.Domain
 	if descriptorFile.ExternalDomain == "" {
 		keosDescriptor.Keos.ExternalDomain = descriptorFile.ClusterID + ".ext"
