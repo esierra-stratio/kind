@@ -42,6 +42,13 @@ type action struct {
 	clusterCredentials commons.ClusterCredentials
 }
 
+type helmRepository struct {
+	url          string
+	user         string
+	pass         string
+	authRequired bool
+}
+
 type keosRegistry struct {
 	url          string
 	user         string
@@ -87,6 +94,7 @@ func NewAction(vaultPassword string, descriptorPath string, moveManagement bool,
 func (a *action) Execute(ctx *actions.ActionContext) error {
 	var c string
 	var err error
+	var helmRepository helmRepository
 	var keosRegistry keosRegistry
 	var jsonDockerRegistriesCredentials []byte
 
@@ -285,6 +293,61 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to create keoscluster-registries secret")
 		}
+	}
+
+	helmRepository.url = a.keosCluster.Spec.HelmRepository.URL
+	helmRepository.authRequired = a.keosCluster.Spec.HelmRepository.AuthRequired
+
+	if helmRepository.authRequired {
+		helmRepository.user = a.clusterCredentials.HelmRepositoryCredentials["User"]
+		helmRepository.pass = a.clusterCredentials.HelmRepositoryCredentials["Pass"]
+	}
+
+	// Add helm repo
+	if helmRepository.authRequired {
+		helmRepository.user = a.clusterCredentials.HelmRepositoryCredentials["User"]
+		helmRepository.pass = a.clusterCredentials.HelmRepositoryCredentials["Pass"]
+
+		c = "helm repo add stratio-helm-repo " + helmRepository.url +
+			" --username " + helmRepository.user + " --password " + helmRepository.pass
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to add and authenticate to helm repo: "+helmRepository.url)
+		}
+	} else {
+		c = "helm repo add stratio-helm-repo " + helmRepository.url
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to authenticate to helm repo: "+helmRepository.url)
+		}
+	}
+
+	// Update helm repo
+	c = "helm repo update"
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to update helm repo: "+helmRepository.url)
+	}
+
+	// Pull cluster operator helm chart
+	c = "helm pull cluster-operator --repo " + helmRepository.url +
+		" --untar --untardir /stratio/helm"
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to pull cluster operator helm chart")
+	}
+
+	// Install cluster operator helm chart
+	c = "helm install --wait cluster-operator /stratio/helm/cluster-operator" +
+		" --namespace kube-system" +
+		" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
+		" --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
+		" --set app.containers.controllerManager.image.tag=" + keosClusterVersion +
+		" --set app.containers.controllerManager.imagePullSecrets.enabled=true" +
+		" --set app.containers.controllerManager.imagePullSecrets.name=regcred"
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy keoscluster-controller-manager chart")
 	}
 
 	// Deploy keoscluster-controller-manager chart
