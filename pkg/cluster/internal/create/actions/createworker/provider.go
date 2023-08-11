@@ -123,7 +123,6 @@ type helmRepository struct {
 	user         string
 	pass         string
 	authRequired bool
-	version      string
 }
 
 var scTemplate = DefaultStorageClass{
@@ -260,7 +259,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 
 	helmRepository.url = keosCluster.Spec.HelmRepository.URL
 	helmRepository.authRequired = keosCluster.Spec.HelmRepository.AuthRequired
-	helmRepository.version = "0.1.0-SNAPSHOT"
+	clusterOperatorHelmVersion := "0.1.0-SNAPSHOT"
 
 	if helmRepository.authRequired {
 		helmRepository.user = clusterCredentials.HelmRepositoryCredentials["User"]
@@ -295,7 +294,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 
 	// Pull cluster operator helm chart
 	c = "helm pull cluster-operator --repo " + helmRepository.url +
-		" --version " + helmRepository.version +
+		" --version " + clusterOperatorHelmVersion +
 		" --untar --untardir /stratio/helm"
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
