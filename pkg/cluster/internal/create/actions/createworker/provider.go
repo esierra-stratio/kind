@@ -260,7 +260,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 
 	helmRepository.url = keosCluster.Spec.HelmRepository.URL
 	helmRepository.authRequired = keosCluster.Spec.HelmRepository.AuthRequired
-	helmRepository.version = keosCluster.Spec.HelmRepository.Version
+	helmRepository.version = "0.1.0-SNAPSHOT"
 
 	if helmRepository.authRequired {
 		helmRepository.user = clusterCredentials.HelmRepositoryCredentials["User"]
