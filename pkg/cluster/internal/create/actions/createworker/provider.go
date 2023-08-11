@@ -118,6 +118,14 @@ type DefaultStorageClass struct {
 	VolumeBindingMode    string               `yaml:"volumeBindingMode"`
 }
 
+type helmRepository struct {
+	url          string
+	user         string
+	pass         string
+	authRequired bool
+	version      string
+}
+
 var scTemplate = DefaultStorageClass{
 	APIVersion: "storage.k8s.io/v1",
 	Kind:       "StorageClass",
@@ -252,6 +260,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 
 	helmRepository.url = keosCluster.Spec.HelmRepository.URL
 	helmRepository.authRequired = keosCluster.Spec.HelmRepository.AuthRequired
+	helmRepository.version = keosCluster.Spec.HelmRepository.Version
 
 	if helmRepository.authRequired {
 		helmRepository.user = clusterCredentials.HelmRepositoryCredentials["User"]
@@ -286,6 +295,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 
 	// Pull cluster operator helm chart
 	c = "helm pull cluster-operator --repo " + helmRepository.url +
+		" --version " + helmRepository.version +
 		" --untar --untardir /stratio/helm"
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
@@ -296,7 +306,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 	c = "helm install --wait cluster-operator /stratio/helm/cluster-operator" +
 		" --namespace kube-system" +
 		" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
-		" --set app.container.controllerManager.image.repository=stratio/cluster-operator" +
+		" --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
 		" --set app.containers.controllerManager.image.tag=" + keosClusterVersion +
 		" --set app.containers.controllerManager.imagePullSecrets.enabled=true" +
 		" --set app.containers.controllerManager.imagePullSecrets.name=regcred"

@@ -40,13 +40,6 @@ type action struct {
 	clusterCredentials commons.ClusterCredentials
 }
 
-type helmRepository struct {
-	url          string
-	user         string
-	pass         string
-	authRequired bool
-}
-
 type keosRegistry struct {
 	url          string
 	user         string

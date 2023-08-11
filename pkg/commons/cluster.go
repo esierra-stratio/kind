@@ -234,6 +234,7 @@ type HelmRepositoryCredentials struct {
 type HelmRepository struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
 	URL          string `yaml:"url" validate:"required"`
+	Version      string `yaml:"version" validate:"required"`
 }
 
 type TemplateParams struct {
