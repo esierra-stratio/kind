@@ -11,7 +11,7 @@ core:
   cluster-autoscaler: v1.27.2
   pause: v3.9
 aws:
-  clusterawsadm: v2.2.0
+  clusterawsadm: v2.2.1
   cluster-api-aws: v2.2.1
   cluster-api-aws-templates: v2.2.1
   managed:

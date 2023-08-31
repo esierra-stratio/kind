@@ -13,6 +13,7 @@
 * [Core] Bump cluster api to v1.5.1
 * [Core] Bump Calico to v3.26.1
 * [AWS] Bump cluster-api-provider-aws to v1.5.1
+* [AWS] Bump clusterawsadm to v2.2.1
 
 ## 0.17.0-0.2.0 (2023-07-03)
 
