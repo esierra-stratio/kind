@@ -318,7 +318,10 @@ func (b *AzureBuilder) internalNginx(p ProviderParams, networks commons.Networks
 			resourceGroup = p.ClusterName
 		}
 		for _, s := range networks.Subnets {
-			publicSubnetID, _ := AzureFilterPublicSubnet(ctx, subnetsClient, resourceGroup, networks.VPCID, s.SubnetId)
+			publicSubnetID, err := AzureFilterPublicSubnet(ctx, subnetsClient, resourceGroup, networks.VPCID, s.SubnetId)
+			if err != nil {
+				return false, err
+			}
 			if len(publicSubnetID) > 0 {
 				return false, nil
 			}
