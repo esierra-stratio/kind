@@ -2,7 +2,7 @@
 
 ## 0.17.0-0.3.4 (upcoming)
 
-* [Core] Increase replicas for capi controller manager services
+* [Core] Conditionally increase replicas for capi controller manager services
 
 ## 0.17.0-0.3.3 (2023-10-11)
 

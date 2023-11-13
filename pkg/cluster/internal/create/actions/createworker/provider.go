@@ -455,8 +455,8 @@ func (p *Provider) configHACAPI(n nodes.Node, kubeconfigPath string) error {
 		capiKubeadmReplicas = 2
 	}
 
-	// Scale CAPI to 2 replicas
-	c = fmt.Sprintf("kubectl --kubeconfig %s -n capi-system scale --replicas 2 deploy capi-controller-manager", kubeconfigPath)
+	// Scale capi-controller-manager to 2 replicas
+	c = fmt.Sprintf("kubectl --kubeconfig %s -n capi-system scale --replicas %d deploy capi-controller-manager", kubeconfigPath, capiKubeadmReplicas)
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to scale the CAPI Deployment")
