@@ -448,15 +448,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		var capxPDBTemplate string
 
-		err = provider.configHACAPI(n, kubeconfigPath)
-		if err != nil {
-			return err
-		}
-
 		err = provider.installCAPXWorker(n, kubeconfigPath, allowCommonEgressNetPolPath)
 		if err != nil {
 			return err
 		}
+
+                err = provider.configHACAPI(n, kubeconfigPath)
+                if err != nil {
+                        return err
+                }
 
 		// Define PodDisruptionBudget for capi and capx services
 		capxPDB, err := getManifest(a.keosCluster.Spec.InfraProvider, "pdb.tmpl", a.keosCluster.Spec)
