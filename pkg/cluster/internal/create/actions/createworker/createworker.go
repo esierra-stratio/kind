@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -446,9 +447,18 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
 		defer ctx.Status.End(false)
 
+		var capiKubeadmReplicas int
+
 		err = provider.installCAPXWorker(n, kubeconfigPath, allowCommonEgressNetPolPath)
 		if err != nil {
 			return err
+		}
+
+		// Determine the number of replicas for capi-kubeadm deployments
+		if a.keosCluster.Spec.ControlPlane.Managed {
+			capiKubeadmReplicas = 0
+		} else {
+			capiKubeadmReplicas = 2
 		}
 
 		// Scale CAPI to 2 replicas
@@ -456,6 +466,20 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to scale the CAPI Deployment")
+		}
+
+		// Scale capi-kubeadm-control-plane
+		c = fmt.Sprintf("kubectl --kubeconfig %s -n capi-kubeadm-control-plane-system scale --replicas %d deploy capi-kubeadm-control-plane-controller-manager", kubeconfigPath, capiKubeadmReplicas)
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to scale the capi-kubeadm-control-plane Deployment")
+		}
+
+		// Scale capi-kubeadm-bootstrap
+		c = fmt.Sprintf("kubectl --kubeconfig %s -n capi-kubeadm-bootstrap-system scale --replicas %d deploy capi-kubeadm-bootstrap-controller-manager", kubeconfigPath, capiKubeadmReplicas)
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to scale the capi-kubeadm-bootstrap Deployment")
 		}
 
 		// Allow egress in CAPI's Namespaces
