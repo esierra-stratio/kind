@@ -446,16 +446,28 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
 		defer ctx.Status.End(false)
 
+		var capxPDBTemplate string
+
+		err = provider.configHACAPI(n, kubeconfigPath)
+		if err != nil {
+			return err
+		}
+
 		err = provider.installCAPXWorker(n, kubeconfigPath, allowCommonEgressNetPolPath)
 		if err != nil {
 			return err
 		}
 
-		// Scale CAPI to 2 replicas
-		c = "kubectl --kubeconfig " + kubeconfigPath + " -n capi-system scale --replicas 2 deploy capi-controller-manager"
+		// Define PodDisruptionBudget for capi and capx services
+		capxPDB, err := getManifest(a.keosCluster.Spec.InfraProvider, "pdb.tmpl", a.keosCluster.Spec)
+		if err != nil {
+			return errors.Wrap(err, "failed to get PodDisruptionBudget file")
+		}
+
+		c = "echo '" + capxPDB + "' > " + capxPDBTemplate
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
-			return errors.Wrap(err, "failed to scale the CAPI Deployment")
+			return errors.Wrap(err, "failed to create PodDisruptionBudget file")
 		}
 
 		// Allow egress in CAPI's Namespaces
