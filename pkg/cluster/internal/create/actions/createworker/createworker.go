@@ -446,12 +446,12 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
 		defer ctx.Status.End(false)
 
-		err = provider.configHACAPI(n, kubeconfigPath)
+		err = provider.installCAPXWorker(n, kubeconfigPath, allowCommonEgressNetPolPath)
 		if err != nil {
 			return err
 		}
 
-		err = provider.installCAPXWorker(n, kubeconfigPath, allowCommonEgressNetPolPath)
+		err = provider.configHACAPI(n, kubeconfigPath)
 		if err != nil {
 			return err
 		}
