@@ -5,6 +5,7 @@
 * [Core] Conditionally increase replicas for capi controller manager services
 * [Core] Add PDB and PriorityClass to capx components
 
+
 ## 0.17.0-0.3.3 (2023-10-11)
 
 * Add remote command execution retries
