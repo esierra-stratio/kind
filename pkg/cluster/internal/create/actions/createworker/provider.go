@@ -506,7 +506,7 @@ func (p *Provider) installCAPXWorker(n nodes.Node, kubeconfigPath string, allowA
 	}
 	c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system rollout status deploy " + p.capxName + "-controller-manager --timeout 60s"
 	if err != nil {
-		return errors.Wrap(err, "failed to check rollout status for capa-controller-manager")
+		return errors.Wrap(err, "failed to check rollout status for " + p.capxName +"-controller-manager")
 	}
 
 	// Scale CAPX to 2 replicas
