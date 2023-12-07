@@ -119,11 +119,15 @@ func validateWorkersQuantity(workerNodes commons.WorkerNodes) error {
 		}
 
 		// Validate when only one WorkerNode is defined
-		if numberOfNodes == 1 && *wn.Quantity == 0 {
-			if isBalanced {
-				return errors.New("in case of defining one WorkerNode, quantity must be greater than 3 for " + wn.Name)
+		if numberOfNodes == 1 {
+			switch {
+			case isBalanced && (*wn.Quantity == 0 || *wn.Quantity%3 != 0):
+				return errors.New("in case of defining one WorkerNode, quantity must be multiple of 3 for " + wn.Name)
+			case !isBalanced && *wn.Quantity < 1:
+				return errors.New("in case of defining one WorkerNode, quantity must be greater than 0 for " + wn.Name)
+			default:
+				return nil
 			}
-			return errors.New("in case of defining one WorkerNode, quantity must be greater than 0 for " + wn.Name)
 		}
 
 		// Cluster Autoscaler doesn't scale a managed node group lower than minSize or higher than maxSize.
@@ -137,9 +141,13 @@ func validateWorkersQuantity(workerNodes commons.WorkerNodes) error {
 			return errors.New("az and zone_distribution cannot be used at the same time for " + wn.Name)
 		}
 
+		if isBalanced && *wn.Quantity%3 != 0 {
+			return errors.New("quantity in WorkerNode: " + wn.Name + " must be zero or multiple of 3")
+		}
+
 		// Validate when more than one WorkerNode is defined
 		if numberOfNodes > 1 && *wn.Quantity > 0 {
-			if isBalanced && *wn.Quantity >= 3 {
+			if isBalanced && *wn.Quantity%3 == 0 {
 				InitialBalancedWorkerNode++
 			} else if !isBalanced {
 				InitialUnBalancedWorkerNode++
@@ -148,7 +156,7 @@ func validateWorkersQuantity(workerNodes commons.WorkerNodes) error {
 	}
 
 	if InitialBalancedWorkerNode == 0 && InitialUnBalancedWorkerNode == 0 {
-		return errors.New("at least one WorkerNode must have quantity equal or greater than 1 for unbalanced and equal or greater than 3 for balanced")
+		return errors.New("at least one WorkerNode must have quantity equal or greater than 1 for unbalanced and greater than 0 and multiple of 3 for balanced")
 	}
 
 	return nil
