@@ -104,26 +104,53 @@ func validateWorkersName(workerNodes commons.WorkerNodes) error {
 }
 
 func validateWorkersQuantity(workerNodes commons.WorkerNodes) error {
+	var InitialBalancedWorkerNode int
+	var InitialUnBalancedWorkerNode int
+	numberOfNodes := len(workerNodes)
+
 	for _, wn := range workerNodes {
+		var isBalanced bool
+
+		switch {
+		case wn.ZoneDistribution == "balanced" || (wn.ZoneDistribution == "" && wn.AZ == ""):
+			isBalanced = true
+		default:
+			isBalanced = false
+		}
+
+		// Validate when only one WorkerNode is defined
+		if numberOfNodes == 1 && *wn.Quantity == 0 {
+			if isBalanced {
+				return errors.New("in case of defining one WorkerNode, quantity must be greater than 3 for " + wn.Name)
+			}
+			return errors.New("in case of defining one WorkerNode, quantity must be greater than 0 for " + wn.Name)
+		}
+
 		// Cluster Autoscaler doesn't scale a managed node group lower than minSize or higher than maxSize.
-		if wn.NodeGroupMaxSize < wn.Quantity && wn.NodeGroupMaxSize != 0 {
-			return errors.New("max_size in WorkerNodes " + wn.Name + ", must be equal or greater than quantity")
+		if wn.NodeGroupMaxSize < *wn.Quantity && wn.NodeGroupMaxSize != 0 {
+			return errors.New("max_size in WorkerNodes " + wn.Name + " must be equal or greater than quantity")
 		}
-		if wn.Quantity < wn.NodeGroupMinSize {
-			return errors.New("quantity in WorkerNodes " + wn.Name + ", must be equal or greater than min_size")
-		}
-		if wn.NodeGroupMinSize < 0 {
-			return errors.New("min_size in WorkerNodes " + wn.Name + ", must be equal or greater than 0")
+		if *wn.Quantity < *wn.NodeGroupMinSize {
+			return errors.New("quantity in WorkerNodes " + wn.Name + " must be equal or greater than min_size")
 		}
 		if wn.AZ != "" && wn.ZoneDistribution != "" {
-			return errors.New("az and zone_distribution cannot be used at the same time")
+			return errors.New("az and zone_distribution cannot be used at the same time for " + wn.Name)
 		}
-		if wn.ZoneDistribution == "balanced" || (wn.ZoneDistribution == "" && wn.AZ == "") {
-			if wn.Quantity < 3 {
-				return errors.New("quantity in WorkerNodes " + wn.Name + ", must be equal or greater than 3 when zone_distribution is balanced (default)")
+
+		// Validate when more than one WorkerNode is defined
+		if numberOfNodes > 1 && *wn.Quantity > 0 {
+			if isBalanced && *wn.Quantity >= 3 {
+				InitialBalancedWorkerNode++
+			} else if !isBalanced {
+				InitialUnBalancedWorkerNode++
 			}
 		}
 	}
+
+	if InitialBalancedWorkerNode == 0 && InitialUnBalancedWorkerNode == 0 {
+		return errors.New("at least one WorkerNode must have quantity equal or greater than 1 for unbalanced and equal or greater than 3 for balanced")
+	}
+
 	return nil
 }
 
