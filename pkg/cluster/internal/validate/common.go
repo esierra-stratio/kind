@@ -109,26 +109,7 @@ func validateWorkersQuantity(workerNodes commons.WorkerNodes) error {
 	numberOfNodes := len(workerNodes)
 
 	for _, wn := range workerNodes {
-		var isBalanced bool
-
-		switch {
-		case wn.ZoneDistribution == "balanced" || (wn.ZoneDistribution == "" && wn.AZ == ""):
-			isBalanced = true
-		default:
-			isBalanced = false
-		}
-
-		// Validate when only one WorkerNode is defined
-		if numberOfNodes == 1 {
-			switch {
-			case isBalanced && (*wn.Quantity == 0 || *wn.Quantity%3 != 0):
-				return errors.New("in case of defining one WorkerNode, quantity must be multiple of 3 for " + wn.Name)
-			case !isBalanced && *wn.Quantity < 1:
-				return errors.New("in case of defining one WorkerNode, quantity must be greater than 0 for " + wn.Name)
-			default:
-				return nil
-			}
-		}
+		var isBalanced = wn.ZoneDistribution == "balanced" || (wn.ZoneDistribution == "" && wn.AZ == "")
 
 		// Cluster Autoscaler doesn't scale a managed node group lower than minSize or higher than maxSize.
 		if wn.NodeGroupMaxSize < *wn.Quantity && wn.NodeGroupMaxSize != 0 {
@@ -140,13 +121,25 @@ func validateWorkersQuantity(workerNodes commons.WorkerNodes) error {
 		if wn.AZ != "" && wn.ZoneDistribution != "" {
 			return errors.New("az and zone_distribution cannot be used at the same time for " + wn.Name)
 		}
-
 		if isBalanced && *wn.Quantity%3 != 0 {
 			return errors.New("quantity in WorkerNode: " + wn.Name + " must be zero or multiple of 3")
 		}
 
-		// Validate when more than one WorkerNode is defined
-		if numberOfNodes > 1 && *wn.Quantity > 0 {
+		// Validate when only one WorkerNode is defined
+		if numberOfNodes == 1 {
+			switch {
+			case isBalanced && (*wn.Quantity == 0 || *wn.Quantity%3 != 0):
+				return errors.New("in case of defining one WorkerNode, quantity must be multiple of 3 for " + wn.Name)
+			case !isBalanced && *wn.Quantity < 1:
+				return errors.New("in case of defining one WorkerNode, quantity must be greater than 0 for " + wn.Name)
+			default:
+				if isBalanced {
+					InitialBalancedWorkerNode++
+				} else {
+					InitialUnBalancedWorkerNode++
+				}
+			}
+		} else if numberOfNodes > 1 && *wn.Quantity > 0 {
 			if isBalanced && *wn.Quantity%3 == 0 {
 				InitialBalancedWorkerNode++
 			} else if !isBalanced {

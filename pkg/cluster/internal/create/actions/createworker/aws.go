@@ -125,7 +125,7 @@ func (b *AWSBuilder) installCloudProvider(n nodes.Node, k string, keosCluster co
 		" --set args[1]=\"--cloud-provider=aws\"" +
 		" --set args[2]=\"--cluster-cidr=" + podsCidrBlock + "\"" +
 		" --set args[3]=\"--cluster-name=" + keosCluster.Metadata.Name + "\""
-	_, err := commons.ExecuteCommand(n, c)
+	_, err := commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy aws-cloud-controller-manager Helm Chart")
 	}
@@ -136,7 +136,7 @@ func (b *AWSBuilder) installCSI(n nodes.Node, k string) error {
 	c := "helm install aws-ebs-csi-driver /stratio/helm/aws-ebs-csi-driver" +
 		" --kubeconfig " + k +
 		" --namespace " + b.csiNamespace
-	_, err := commons.ExecuteCommand(n, c)
+	_, err := commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy AWS EBS CSI driver Helm Chart")
 	}
@@ -167,14 +167,14 @@ spec:
 	// Create the eks.config file in the container
 	eksConfigPath := "/kind/eks.config"
 	c = "echo \"" + eksConfigData + "\" > " + eksConfigPath
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to create eks.config")
 	}
 
 	// Run clusterawsadm with the eks.config file previously created (this will create or update the CloudFormation stack in AWS)
 	c = "clusterawsadm bootstrap iam create-cloudformation-stack --config " + eksConfigPath
-	_, err = commons.ExecuteCommand(n, c, envVars)
+	_, err = commons.ExecuteCommand(n, c, 5, envVars)
 	if err != nil {
 		return errors.Wrap(err, "failed to run clusterawsadm")
 	}
@@ -237,13 +237,13 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string) error {
 	if b.capxManaged {
 		// Remove annotation from default storage class
 		c = "kubectl --kubeconfig " + k + ` get sc -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}'`
-		output, err := commons.ExecuteCommand(n, c)
+		output, err := commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to get default storage class")
 		}
 		if strings.TrimSpace(output) != "" && strings.TrimSpace(output) != "No resources found" {
 			c = "kubectl --kubeconfig " + k + " annotate sc " + strings.TrimSpace(output) + " " + defaultScAnnotation + "-"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to remove annotation from default storage class")
 			}

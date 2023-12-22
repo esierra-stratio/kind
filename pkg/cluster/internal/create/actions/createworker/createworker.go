@@ -23,7 +23,6 @@ import (
 	_ "embed"
 	"os"
 	"strings"
-	"time"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/commons"
@@ -133,7 +132,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		" --docker-server=" + strings.Split(keosRegistry.url, "/")[0] +
 		" --docker-username=" + keosRegistry.user +
 		" --docker-password=" + keosRegistry.pass
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to create docker-registry secret")
 	}
@@ -144,7 +143,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		// Create provider-system namespace
 		c = "kubectl create namespace " + provider.capxName + "-system"
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to create "+provider.capxName+"-system namespace")
 		}
@@ -155,14 +154,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			" --docker-username=" + keosRegistry.user +
 			" --docker-password=" + keosRegistry.pass +
 			" --namespace=" + provider.capxName + "-system"
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to create docker-registry secret")
 		}
 
 		// Add imagePullSecrets to infrastructure-components.yaml
 		c = "sed -i '/containers:/i\\      imagePullSecrets:\\n      - name: regcred' " + infraComponents
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 
 		if err != nil {
 			return errors.Wrap(err, "failed to add imagePullSecrets to infrastructure-components.yaml")
@@ -189,7 +188,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// Create namespace for CAPI clusters (it must exists)
 	c = "kubectl create ns " + capiClustersNamespace
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to create cluster's Namespace")
 	}
@@ -197,7 +196,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// Create the allow-all-egress network policy file in the container
 	allowCommonEgressNetPolPath := "/kind/allow-all-egress_netpol.yaml"
 	c = "echo \"" + allowCommonEgressNetPol + "\" > " + allowCommonEgressNetPolPath
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to write the allow-all-egress network policy")
 	}
@@ -229,16 +228,20 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		// Apply cluster manifests
 		c = "kubectl apply -f " + manifestsPath + "/keoscluster.yaml"
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to apply manifests")
 		}
 
-		time.Sleep(10 * time.Second)
+		c = "kubectl -n " + capiClustersNamespace + " get cluster " + a.keosCluster.Metadata.Name
+		_, err = commons.ExecuteCommand(n, c, 15)
+		if err != nil {
+			return errors.Wrap(err, "failed to wait for cluster")
+		}
 
 		// Wait for the control plane initialization
 		c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneInitialized --timeout=25m cluster " + a.keosCluster.Metadata.Name
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to create the workload cluster")
 		}
@@ -250,14 +253,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		// Get the workload cluster kubeconfig
 		c = "clusterctl -n " + capiClustersNamespace + " get kubeconfig " + a.keosCluster.Metadata.Name + " | tee " + kubeconfigPath
-		kubeconfig, err := commons.ExecuteCommand(n, c)
+		kubeconfig, err := commons.ExecuteCommand(n, c, 5)
 		if err != nil || kubeconfig == "" {
 			return errors.Wrap(err, "failed to get workload cluster kubeconfig")
 		}
 
 		// Create worker-kubeconfig secret for keos cluster
 		c = "kubectl -n " + capiClustersNamespace + " create secret generic worker-kubeconfig --from-file " + kubeconfigPath
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to create worker-kubeconfig secret")
 		}
@@ -325,13 +328,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 					// Deploy Kubernetes RBAC internal loadbalancing
 					c = "echo \"" + rbacInternalLoadBalancing + "\" > " + rbacInternalLoadBalancingPath
-					_, err = commons.ExecuteCommand(n, c)
+					_, err = commons.ExecuteCommand(n, c, 5)
 					if err != nil {
 						return errors.Wrap(err, "failed to write the kubernetes RBAC internal loadbalancing")
 					}
 
 					c = "kubectl --kubeconfig " + kubeconfigPath + " apply -f " + rbacInternalLoadBalancingPath
-					_, err = commons.ExecuteCommand(n, c)
+					_, err = commons.ExecuteCommand(n, c, 5)
 					if err != nil {
 						return errors.Wrap(err, "failed to the kubernetes RBAC internal loadbalancing")
 					}
@@ -346,7 +349,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		if awsEKSEnabled {
 			c = "kubectl -n capa-system rollout restart deployment capa-controller-manager"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to reload capa-controller-manager")
 			}
@@ -355,21 +358,21 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if isMachinePool {
 			// Wait for all the machine pools to be ready
 			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=Ready --timeout=15m --all mp"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
 
 			// Wait for container metrics to be available
 			c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system rollout status deployment metrics-server --timeout=90s"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to wait for container metrics to be available")
 			}
 		} else {
 			// Wait for all the machine deployments to be ready
 			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=Ready --timeout=15m --all md"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
@@ -378,7 +381,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if !a.keosCluster.Spec.ControlPlane.Managed && *a.keosCluster.Spec.ControlPlane.HighlyAvailable {
 			// Wait for all control planes to be ready
 			c = "kubectl -n " + capiClustersNamespace + " wait --for=jsonpath=\"{.status.readyReplicas}\"=3 --timeout 10m kubeadmcontrolplanes " + a.keosCluster.Metadata.Name + "-control-plane"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
@@ -440,7 +443,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 			// Allow egress in kube-system Namespace
 			c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system apply -f " + allowCommonEgressNetPolPath
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to apply kube-system egress NetworkPolicy")
 			}
@@ -450,7 +453,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 
 			c = "echo \"" + denyEgressIMDSGNetPol + "\" > " + denyallEgressIMDSGNetPolPath
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to write the deny-all-traffic-to-aws-imds global network policy")
 			}
@@ -460,21 +463,21 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 
 			c = "echo \"" + allowEgressIMDSGNetPol + "\" > " + allowCAPXEgressIMDSGNetPolPath
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to write the allow-traffic-to-aws-imds-capa global network policy")
 			}
 
 			// Deny CAPA egress to AWS IMDS
 			c = "kubectl --kubeconfig " + kubeconfigPath + " apply -f " + denyallEgressIMDSGNetPolPath
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to apply deny IMDS traffic GlobalNetworkPolicy")
 			}
 
 			// Allow CAPA egress to AWS IMDS
 			c = "kubectl --kubeconfig " + kubeconfigPath + " apply -f " + allowCAPXEgressIMDSGNetPolPath
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to apply allow CAPX as egress GlobalNetworkPolicy")
 			}
@@ -495,9 +498,37 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				" --set clusterAPIMode=incluster-incluster" +
 				" --set replicaCount=2"
 
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to deploy cluster-autoscaler in workload cluster")
+			}
+
+			if !a.moveManagement {
+				autoscalerRBACPath := "/kind/autoscaler_rbac.yaml"
+
+				autoscalerRBAC, err := getManifest("common", "autoscaler_rbac.tmpl", a.keosCluster)
+				if err != nil {
+					return errors.Wrap(err, "failed to get CA RBAC file")
+				}
+
+				c = "echo '" + autoscalerRBAC + "' > " + autoscalerRBACPath
+				_, err = commons.ExecuteCommand(n, c, 5)
+				if err != nil {
+					return errors.Wrap(err, "failed to create CA RBAC file")
+				}
+
+				// Create namespace for CAPI clusters (it must exists) in worker cluster
+				c = "kubectl --kubeconfig " + kubeconfigPath + " create ns " + capiClustersNamespace
+				_, err = commons.ExecuteCommand(n, c, 5)
+				if err != nil {
+					return errors.Wrap(err, "failed to create manifests Namespace")
+				}
+
+				c = "kubectl --kubeconfig " + kubeconfigPath + " apply -f " + autoscalerRBACPath
+				_, err = commons.ExecuteCommand(n, c, 5)
+				if err != nil {
+					return errors.Wrap(err, "failed to apply CA RBAC")
+				}
 			}
 
 			ctx.Status.End(true)
@@ -537,13 +568,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		c = "mkdir -p " + cloudProviderBackupPath + " && chmod -R 0755 " + cloudProviderBackupPath
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to create cloud-provisioner backup directory")
 		}
 
 		c = "clusterctl move -n " + capiClustersNamespace + " --to-directory " + cloudProviderBackupPath
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to backup cloud-provisioner Objects")
 		}
@@ -563,48 +594,52 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			defer ctx.Status.End(false)
 
 			c = "helm uninstall cluster-operator -n kube-system"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "Uninstalling cluster-operator")
 			}
 
-			// Create namespace for CAPI clusters (it must exists) in worker cluster
-			c = "kubectl --kubeconfig " + kubeconfigPath + " create ns " + capiClustersNamespace
-			_, err = commons.ExecuteCommand(n, c)
+			// Create namespace, if not exists, for CAPI clusters in worker cluster
+			c = "kubectl --kubeconfig " + kubeconfigPath + " get ns " + capiClustersNamespace
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
-				return errors.Wrap(err, "failed to create manifests Namespace")
+				c = "kubectl --kubeconfig " + kubeconfigPath + " create ns " + capiClustersNamespace
+				_, err = commons.ExecuteCommand(n, c, 5)
+				if err != nil {
+					return errors.Wrap(err, "failed to create manifests Namespace")
+				}
 			}
 
 			// Pivot management role to worker cluster
 			c = "clusterctl move -n " + capiClustersNamespace + " --to-kubeconfig " + kubeconfigPath
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to pivot management role to worker cluster")
 			}
 
 			// Wait for keoscluster-controller-manager deployment to be ready
 			c = "kubectl --kubeconfig " + kubeconfigPath + " rollout status deploy keoscluster-controller-manager -n kube-system --timeout=5m"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to wait for keoscluster controller ready")
 			}
 
 			// Move keoscluster to workload cluster
 			c = "kubectl -n " + capiClustersNamespace + " get keoscluster " + a.keosCluster.Metadata.Name + " -o json | jq 'del(.status)' | kubectl apply --kubeconfig " + kubeconfigPath + " -f-"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to move keoscluster to workload cluster")
 			}
 
 			c = "kubectl -n " + capiClustersNamespace + " patch keoscluster " + a.keosCluster.Metadata.Name + " -p '{\"metadata\":{\"finalizers\":null}}' --type=merge"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to scale keoscluster deployment to 1")
 			}
 
 			// Delete keoscluster in management cluster
 			c = "kubectl -n " + capiClustersNamespace + " delete keoscluster " + a.keosCluster.Metadata.Name
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to delete keoscluster in management cluster")
 			}

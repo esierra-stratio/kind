@@ -25,7 +25,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
@@ -75,6 +77,11 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string, cluster
 				}
 			}
 		}
+		if wn.Size != "" {
+			if err := validateAzureInstanceType(creds, wn.Size, providerSecrets["SubscriptionID"], spec.Region); err != nil {
+				return errors.New("spec.worker_nodes." + wn.Name + ".size: " + wn.Size + " does not exist as a Azure instance types in region " + spec.Region)
+			}
+		}
 	}
 
 	if (spec.StorageClass != commons.StorageClass{}) {
@@ -119,6 +126,9 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string, cluster
 			if !isAzureNodeImage(spec.ControlPlane.NodeImage) {
 				return errors.New("spec.control_plane: Invalid value: \"node_image\": must have the format " + AzureNodeImageFormat)
 			}
+		}
+		if err := validateAzureInstanceType(creds, spec.ControlPlane.Size, providerSecrets["SubscriptionID"], spec.Region); err != nil {
+			return errors.New("spec.control_plane.size: " + spec.ControlPlane.Size + " does not exist as a GCP instance types in region " + spec.Region)
 		}
 		if err := validateVolumeType(spec.ControlPlane.RootVolume.Type, AzureVolumes); err != nil {
 			return errors.Wrap(err, "spec.control_plane.root_volume: Invalid value: \"type\"")
@@ -311,6 +321,33 @@ func validateAzureNetwork(network commons.Networks, spec commons.Spec, creds *az
 	return nil
 }
 
+func validateAzureInstanceType(creds *azidentity.ClientSecretCredential, instanceType string, subscription string, region string) error {
+	ctx := context.Background()
+	clientFactory, err := armcompute.NewClientFactory(subscription, creds, nil)
+	if err != nil {
+		return err
+	}
+
+	pager := clientFactory.NewResourceSKUsClient().NewListPager(&armcompute.ResourceSKUsClientListOptions{
+		Filter:                   to.Ptr("location eq '" + region + "'"),
+		IncludeExtendedLocations: nil,
+	})
+
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return err
+		}
+		for _, sku := range page.Value {
+			if *sku.Name == instanceType && *sku.ResourceType == "virtualMachines" {
+				return nil
+			}
+		}
+	}
+
+	return errors.New("nonexistent instance type: " + instanceType + " in region " + region)
+}
+
 func validateAKSVersion(spec commons.Spec, creds *azidentity.ClientSecretCredential, subscription string) error {
 	var availableVersions []string
 	ctx := context.Background()
@@ -341,6 +378,16 @@ func validateAKSVersion(spec commons.Spec, creds *azidentity.ClientSecretCredent
 func validateAKSNodes(wn commons.WorkerNodes) error {
 	var isLetter = regexp.MustCompile(`^[a-z0-9]+$`).MatchString
 	for _, n := range wn {
+		isSystemPool := len(n.Taints) == 0 && !n.Spot
+		isBalanced := n.ZoneDistribution == "balanced" || (n.ZoneDistribution == "" && n.AZ == "")
+
+		if isSystemPool {
+			if isBalanced && *n.NodeGroupMinSize < 3 {
+				return errors.New("spec.worker_nodes." + n.Name + " : as a system node group must have min_size greater or equal than 3")
+			} else if !isBalanced && *n.NodeGroupMinSize < 1 {
+				return errors.New("spec.worker_nodes." + n.Name + " : as a system node group must have min_size greater or equal than 1")
+			}
+		}
 		if !isLetter(n.Name) || len(n.Name) >= AKSMaxNodeNameLength {
 			return errors.New("spec.worker_nodes." + n.Name + " : Invalid value \"name\": in AKS must be " + strconv.Itoa(AKSMaxNodeNameLength) + " characters or less & contain only lowercase alphanumeric characters")
 		}
