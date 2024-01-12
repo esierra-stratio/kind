@@ -3,6 +3,7 @@
 ## 0.17.0-0.3.6 (2023-12-21)
 
 * [Core] HotFix: storageclass.parameters.label validation
+* [Core] HotFix: check if coredns pdb already exists
 
 ## 0.17.0-0.3.5 (2023-12-19)
 
