@@ -800,6 +800,11 @@ func enableSelfHealing(n nodes.Node, keosCluster commons.KeosCluster, namespace 
 func generateMHCManifest(n nodes.Node, clusterID string, namespace string, manifestPath string, machineRole string) error {
 	var c string
 	var err error
+	var maxUnhealthy = "100%"
+
+	if strings.Contains(machineRole, "control-plane-node") {
+		maxUnhealthy = "34%"
+	}
 	var machineHealthCheck = `
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineHealthCheck
@@ -808,6 +813,7 @@ metadata:
   namespace: cluster-` + clusterID + `
 spec:
   clusterName: ` + clusterID + `
+  maxUnhealthy: ` + maxUnhealthy + `
   nodeStartupTimeout: 300s
   selector:
     matchLabels:
