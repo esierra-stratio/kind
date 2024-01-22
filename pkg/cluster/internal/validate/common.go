@@ -115,7 +115,7 @@ func validateWorkersQuantity(workerNodes commons.WorkerNodes) error {
 		if wn.NodeGroupMaxSize < *wn.Quantity && wn.NodeGroupMaxSize != 0 {
 			return errors.New("max_size in WorkerNodes " + wn.Name + " must be equal or greater than quantity")
 		}
-		if *wn.Quantity < *wn.NodeGroupMinSize {
+		if wn.NodeGroupMinSize != nil && (*wn.Quantity < *wn.NodeGroupMinSize) {
 			return errors.New("quantity in WorkerNodes " + wn.Name + " must be equal or greater than min_size")
 		}
 		if wn.AZ != "" && wn.ZoneDistribution != "" {

@@ -379,16 +379,19 @@ func validateAKSNodes(wn commons.WorkerNodes) error {
 	var isLetter = regexp.MustCompile(`^[a-z0-9]+$`).MatchString
 	var numberOfSystemPool = 0
 	for _, n := range wn {
-		isSystemPool := len(n.Taints) == 0 && !n.Spot && *n.NodeGroupMinSize > 0
 		isBalanced := n.ZoneDistribution == "balanced" || (n.ZoneDistribution == "" && n.AZ == "")
-
+		isSystemPool := len(n.Taints) == 0 && !n.Spot && (n.NodeGroupMinSize == nil || *n.NodeGroupMinSize > 0)
 		if isSystemPool {
-			if isBalanced && *n.NodeGroupMinSize < 3 {
-				return errors.New("spec.worker_nodes." + n.Name + " : as a system node group must have min_size greater or equal than 3")
-			} else if !isBalanced && *n.NodeGroupMinSize < 1 {
-				return errors.New("spec.worker_nodes." + n.Name + " : as a system node group must have min_size greater or equal than 1")
-			}
 			numberOfSystemPool++
+		}
+		if isSystemPool && n.NodeGroupMinSize != nil {
+			minSizeThreshold := 3
+			if !isBalanced {
+				minSizeThreshold = 1
+			}
+			if *n.NodeGroupMinSize < minSizeThreshold {
+				return errors.New("spec.worker_nodes." + n.Name + " : as a system node group must have min_size equal or greater than " + strconv.Itoa(minSizeThreshold))
+			}
 		}
 		if !isLetter(n.Name) || len(n.Name) >= AKSMaxNodeNameLength {
 			return errors.New("spec.worker_nodes." + n.Name + " : Invalid value \"name\": in AKS must be " + strconv.Itoa(AKSMaxNodeNameLength) + " characters or less & contain only lowercase alphanumeric characters")
