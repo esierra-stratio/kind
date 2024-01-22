@@ -377,8 +377,9 @@ func validateAKSVersion(spec commons.Spec, creds *azidentity.ClientSecretCredent
 
 func validateAKSNodes(wn commons.WorkerNodes) error {
 	var isLetter = regexp.MustCompile(`^[a-z0-9]+$`).MatchString
+	var numberOfSystemPool = 0
 	for _, n := range wn {
-		isSystemPool := len(n.Taints) == 0 && !n.Spot
+		isSystemPool := len(n.Taints) == 0 && !n.Spot && *n.NodeGroupMinSize != 0
 		isBalanced := n.ZoneDistribution == "balanced" || (n.ZoneDistribution == "" && n.AZ == "")
 
 		if isSystemPool {
@@ -394,6 +395,9 @@ func validateAKSNodes(wn commons.WorkerNodes) error {
 		if n.RootVolume.Type != "" && !commons.Contains(AzureAKSVolumes, n.RootVolume.Type) {
 			return errors.New("spec.worker_nodes." + n.Name + ".root_volume: Invalid value \"type\": " + n.RootVolume.Type + " unsupported, supported types: " + fmt.Sprint(strings.Join(AzureAKSVolumes, ", ")))
 		}
+	}
+	if numberOfSystemPool == 0 {
+		return errors.New("spec.worker_nodes: At least one system node group must exist")
 	}
 	return nil
 }
