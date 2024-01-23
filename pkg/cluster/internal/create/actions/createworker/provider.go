@@ -54,7 +54,7 @@ const (
 
 	scName = "keos"
 
-	clusterOperatorChart = "0.2.0-SNAPSHOT"
+	clusterOperatorChart = "0.2.0-PR144-SNAPSHOT"
 	clusterOperatorImage = "0.2.0-SNAPSHOT"
 )
 

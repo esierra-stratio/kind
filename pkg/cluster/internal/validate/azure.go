@@ -390,11 +390,11 @@ func validateAKSNodes(wn commons.WorkerNodes) error {
 				minSizeThreshold = 1
 			}
 			if *n.NodeGroupMinSize < minSizeThreshold {
-				return errors.New("spec.worker_nodes." + n.Name + " : as a system node group must have min_size equal or greater than " + strconv.Itoa(minSizeThreshold))
+				return errors.New("spec.worker_nodes." + n.Name + ": as a system node group must have min_size equal or greater than " + strconv.Itoa(minSizeThreshold))
 			}
 		}
 		if !isLetter(n.Name) || len(n.Name) >= AKSMaxNodeNameLength {
-			return errors.New("spec.worker_nodes." + n.Name + " : Invalid value \"name\": in AKS must be " + strconv.Itoa(AKSMaxNodeNameLength) + " characters or less & contain only lowercase alphanumeric characters")
+			return errors.New("spec.worker_nodes." + n.Name + ": Invalid value \"name\": in AKS must be " + strconv.Itoa(AKSMaxNodeNameLength) + " characters or less & contain only lowercase alphanumeric characters")
 		}
 		if n.RootVolume.Type != "" && !commons.Contains(AzureAKSVolumes, n.RootVolume.Type) {
 			return errors.New("spec.worker_nodes." + n.Name + ".root_volume: Invalid value \"type\": " + n.RootVolume.Type + " unsupported, supported types: " + fmt.Sprint(strings.Join(AzureAKSVolumes, ", ")))
