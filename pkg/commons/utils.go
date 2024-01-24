@@ -22,7 +22,6 @@ import (
 	"time"
 	"unicode"
 
-	"fmt"
 	"os"
 	"strings"
 
@@ -247,8 +246,6 @@ func ExecuteCommand(n nodes.Node, command string, timeout int, envVars ...[]stri
 		if err == nil || !provisionCommands || !(provisionCommands && (dialLookupErrorPresent || notFoundErrorPresent)) {
 			break
 		}
-
-		fmt.Println("lo estoy intentando de nuevooo")
 
 		time.Sleep(time.Duration(timeout) * time.Second)
 	}
