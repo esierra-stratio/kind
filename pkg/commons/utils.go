@@ -246,7 +246,6 @@ func ExecuteCommand(n nodes.Node, command string, timeout int, envVars ...[]stri
 		if err == nil || !provisionCommands || !(provisionCommands && (dialLookupErrorPresent || notFoundErrorPresent)) {
 			break
 		}
-
 		time.Sleep(time.Duration(timeout) * time.Second)
 	}
 	if strings.Contains(raw.String(), "Error:") {
