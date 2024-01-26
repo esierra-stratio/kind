@@ -38,7 +38,7 @@ var GCPVolumes = []string{"pd-balanced", "pd-ssd", "pd-standard", "pd-extreme"}
 var isGCPNodeImage = regexp.MustCompile(`^projects/[\w-]+/global/images/[\w-]+$`).MatchString
 var GCPNodeImageFormat = "projects/[PROJECT_ID]/global/images/[IMAGE_NAME]"
 
-func validateGCP(spec commons.Spec, providerSecrets map[string]string) error {
+func validateGCP(spec commons.KeosSpec, providerSecrets map[string]string) error {
 	var err error
 	var isGKEVersion = regexp.MustCompile(`^v\d.\d{2}.\d{1,2}-gke.\d{3,4}$`).MatchString
 
@@ -171,7 +171,7 @@ func validateGCPInstanceType(instanceType string, credentialsJson string, region
 
 }
 
-func validateGCPStorageClass(spec commons.Spec) error {
+func validateGCPStorageClass(spec commons.KeosSpec) error {
 	var err error
 	var isKeyValid = regexp.MustCompile(`^projects/[a-zA-Z0-9-]+/locations/[a-zA-Z0-9-]+/keyRings/[a-zA-Z0-9-]+/cryptoKeys/[a-zA-Z0-9-]+$`).MatchString
 	var sc = spec.StorageClass
