@@ -348,7 +348,7 @@ func validateAzureInstanceType(creds *azidentity.ClientSecretCredential, instanc
 	return errors.New("nonexistent instance type: " + instanceType + " in region " + region)
 }
 
-func validateAKSVersion(spec commons.Spec, creds *azidentity.ClientSecretCredential, subscription string) error {
+func validateAKSVersion(spec commons.KeosSpec, creds *azidentity.ClientSecretCredential, subscription string) error {
 	var availableVersions []string
 	ctx := context.Background()
 	clientFactory, err := armcontainerservice.NewClientFactory(subscription, creds, nil)

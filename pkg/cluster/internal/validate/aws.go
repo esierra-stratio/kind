@@ -396,7 +396,7 @@ func validateAWSInstanceType(cfg aws.Config, instanceType string) error {
 	return nil
 }
 
-func validateAWSAZs(ctx context.Context, cfg aws.Config, spec commons.Spec) error {
+func validateAWSAZs(ctx context.Context, cfg aws.Config, spec commons.KeosSpec) error {
 	var err error
 	var azs []string
 

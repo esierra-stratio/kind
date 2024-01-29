@@ -137,7 +137,7 @@ func (b *AzureBuilder) installCloudProvider(n nodes.Node, k string, privateParam
 		c += " --set cloudControllerManager.imageRepository=" + privateParams.KeosRegUrl + "/oss/kubernetes" +
 			" --set cloudNodeManager.imageRepository=" + privateParams.KeosRegUrl + "/oss/kubernetes"
 	}
-	_, err := commons.ExecuteCommand(n, c)
+	_, err := commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cloud-provider-azure Helm Chart")
 	}
@@ -158,7 +158,7 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string, privateParams PrivateP
 		c += " --set image.baseRepo=" + privateParams.KeosRegUrl
 	}
 
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
 	}
@@ -173,7 +173,7 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string, privateParams PrivateP
 		c += " --set image.baseRepo=" + privateParams.KeosRegUrl
 	}
 
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure File CSI driver Helm Chart")
 	}
