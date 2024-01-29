@@ -380,7 +380,7 @@ func validateAKSNodes(wn commons.WorkerNodes) error {
 	var numberOfSystemPool = 0
 	for _, n := range wn {
 		isBalanced := n.ZoneDistribution == "balanced" || (n.ZoneDistribution == "" && n.AZ == "")
-		isSystemPool := len(n.Taints) == 0 && !n.Spot && (n.NodeGroupMinSize == nil || *n.NodeGroupMinSize > 0)
+		isSystemPool := len(n.Taints) == 0 && !n.Spot && (n.NodeGroupMinSize == nil || *n.NodeGroupMinSize != 0)
 		if isSystemPool {
 			numberOfSystemPool++
 		}
