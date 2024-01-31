@@ -162,6 +162,26 @@ func (b *AWSBuilder) installCSI(n nodes.Node, k string, privateParams PrivatePar
 	return nil
 }
 
+func installLBController(n nodes.Node, k string, privateParams PrivateParams) error {
+	keosCluster := privateParams.KeosCluster
+
+	c := "helm install aws-load-balancer-controller /stratio/helm/aws-load-balancer-controller" +
+	" --kubeconfig " + k +
+	" --namespace kube-system" +
+	" --set clusterName=" + keosCluster.Metadata.Name +
+	" --set podDisruptionBudget.minAvailable=1"
+	if privateParams.Private {
+		c += " --set image.repository=" + privateParams.KeosRegUrl + "/eks/aws-load-balancer-controller"
+	}
+
+	_, err := commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy aws-load-balancer-controller Helm Chart")
+	}
+
+	return nil
+}
+
 func createCloudFormationStack(n nodes.Node, envVars []string) error {
 	var c string
 	var err error

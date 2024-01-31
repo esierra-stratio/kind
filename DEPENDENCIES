@@ -15,6 +15,7 @@ core:
   cluster-autoscaler: v1.27.2
   pause: v3.9
 aws:
+  aws-load-balancer-controller:1.6.2
   clusterawsadm: v2.2.1
   cluster-api-aws: v2.2.1
   cluster-api-aws-templates: v2.2.1
