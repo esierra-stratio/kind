@@ -254,7 +254,7 @@ func (p *Provider) deployCertManager(n nodes.Node, keosRegistryUrl string, kubec
 	if kubeconfigPath != "" {
 		c += " --kubeconfig " + kubeconfigPath
 	}
-	_, err := commons.ExecuteCommand(n, c)
+	_, err := commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to create cert-manager crds")
 	}
@@ -263,7 +263,7 @@ func (p *Provider) deployCertManager(n nodes.Node, keosRegistryUrl string, kubec
 	if kubeconfigPath != "" {
 		c += " --kubeconfig " + kubeconfigPath
 	}
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to create cert-manager namespace")
 	}
@@ -280,7 +280,7 @@ func (p *Provider) deployCertManager(n nodes.Node, keosRegistryUrl string, kubec
 		c += " --kubeconfig " + kubeconfigPath
 	}
 
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cert-manager Helm Chart")
 	}
@@ -295,19 +295,19 @@ func (p *Provider) deployClusterOperator(n nodes.Node, privateParams PrivatePara
 
 	if firstInstallation && keosCluster.Spec.InfraProvider == "aws" && strings.HasPrefix(keosCluster.Spec.HelmRepository.URL, "s3://") {
 		c = "mkdir -p ~/.aws"
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to create aws config file")
 		}
 		c = "echo [default] > ~/.aws/config && " +
 			"echo region = " + keosCluster.Spec.Region + " >>  ~/.aws/config"
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to create aws config file")
 		}
 		awsCredentials := "[default]\naws_access_key_id = " + clusterCredentials.ProviderCredentials["AccessKey"] + "\naws_secret_access_key = " + clusterCredentials.ProviderCredentials["SecretKey"] + "\n"
 		c = "echo '" + awsCredentials + "' > ~/.aws/credentials"
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to create aws credentials file")
 		}
@@ -341,7 +341,7 @@ func (p *Provider) deployClusterOperator(n nodes.Node, privateParams PrivatePara
 			}
 			// Write keoscluster file
 			c = "echo '" + string(clusterConfigYAML) + "' > " + manifestsPath + "/clusterconfig.yaml"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to write the keoscluster file")
 			}
@@ -884,7 +884,7 @@ func getManifest(parentPath string, name string, params interface{}) (string, er
 
 func patchDeploy(n nodes.Node, k string, ns string, deployName string, patch string) error {
 	c := "kubectl --kubeconfig " + k + " patch deploy -n " + ns + " " + deployName + " -p '" + patch + "'"
-	_, err := commons.ExecuteCommand(n, c)
+	_, err := commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return err
 	}
@@ -893,6 +893,6 @@ func patchDeploy(n nodes.Node, k string, ns string, deployName string, patch str
 
 func rolloutStatus(n nodes.Node, k string, ns string, deployName string) error {
 	c := "kubectl --kubeconfig " + k + " rollout status deploy -n " + ns + " " + deployName + " --timeout=5m"
-	_, err := commons.ExecuteCommand(n, c)
+	_, err := commons.ExecuteCommand(n, c, 5)
 	return err
 }

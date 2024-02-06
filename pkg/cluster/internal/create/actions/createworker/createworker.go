@@ -139,22 +139,22 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Installing Private CNI 🎖️")
 		defer ctx.Status.End(false)
 		c = `sed -i 's/@sha256:[[:alnum:]_-].*$//g' ` + cniDefaultFile
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return err
 		}
 		c = `sed -i 's|docker.io|` + keosRegistry.url + `|g' /kind/manifests/default-cni.yaml`
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return err
 		}
 		c = `sed -i 's/{{ .PodSubnet }}/10.244.0.0\/16/g' /kind/manifests/default-cni.yaml`
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return err
 		}
 		c = `cat /kind/manifests/default-cni.yaml | kubectl apply -f -`
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return err
 		}
@@ -163,7 +163,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Deleting local storage plugin 🎖️")
 		defer ctx.Status.End(false)
 		c = `kubectl delete -f ` + storageDefaultPath + ` --force`
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		ctx.Status.End(true)
 
 	}
@@ -254,14 +254,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			"echo \"  cert-manager:\" >> /root/.cluster-api/clusterctl.yaml && " +
 			"echo \"    repository: " + keosRegistry.url + "/cert-manager\" >> /root/.cluster-api/clusterctl.yaml "
 
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 
 		if err != nil {
 			return errors.Wrap(err, "failed to add private image registry clusterctl config")
 		}
 
 		c = `sed -i 's/@sha256:[[:alnum:]_-].*$//g' /root/.cluster-api/local-repository/infrastructure-gcp/` + infraGCPVersion + `/infrastructure-components.yaml`
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return err
 		}
@@ -328,7 +328,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if a.clusterConfig != nil {
 			// Apply cluster manifests
 			c = "kubectl apply -f " + manifestsPath + "/clusterconfig.yaml"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to apply clusterconfig manifests")
 			}
@@ -746,21 +746,21 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			if a.clusterConfig != nil {
 
 				c = "kubectl -n " + capiClustersNamespace + " patch clusterconfig " + a.clusterConfig.Metadata.Name + " -p '{\"metadata\":{\"ownerReferences\":null,\"finalizers\":null}}' --type=merge"
-				_, err = commons.ExecuteCommand(n, c)
+				_, err = commons.ExecuteCommand(n, c, 5)
 				if err != nil {
 					return errors.Wrap(err, "failed to remove clusterconfig ownerReferences and finalizers")
 				}
 
 				// Move clusterConfig to workload cluster
 				c = "kubectl -n " + capiClustersNamespace + " get clusterconfig " + a.clusterConfig.Metadata.Name + " -o json | kubectl apply --kubeconfig " + kubeconfigPath + " -f-"
-				_, err = commons.ExecuteCommand(n, c)
+				_, err = commons.ExecuteCommand(n, c, 5)
 				if err != nil {
 					return errors.Wrap(err, "failed to move clusterconfig to workload cluster")
 				}
 
 				// Delete clusterconfig in management cluster
 				c = "kubectl -n " + capiClustersNamespace + " delete clusterconfig " + a.clusterConfig.Metadata.Name
-				_, err = commons.ExecuteCommand(n, c)
+				_, err = commons.ExecuteCommand(n, c, 5)
 				if err != nil {
 					return errors.Wrap(err, "failed to delete clusterconfig in management cluster")
 				}
