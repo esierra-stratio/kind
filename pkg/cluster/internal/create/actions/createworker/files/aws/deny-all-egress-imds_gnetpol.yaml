@@ -2,7 +2,7 @@
 apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
-  name: deny-all-traffic-to-gcp-imds
+  name: deny-all-traffic-to-aws-imds
 spec:
   egress:
   - action: Log

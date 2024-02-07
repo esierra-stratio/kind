@@ -246,8 +246,6 @@ func (p *Provider) getAllowCAPXEgressIMDSGNetPol() (string, error) {
 		return "", err
 	}
 
-	fmt.Println("\n"+fmt.Sprintln(allowEgressIMDSgnpContent))
-
 	return string(allowEgressIMDSgnpContent), nil
 }
 
