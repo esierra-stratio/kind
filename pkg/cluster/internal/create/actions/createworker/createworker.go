@@ -586,7 +586,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			return errors.Wrap(err, "failed to apply allow CAPX as egress GlobalNetworkPolicy")
 		}
 		ctx.Status.End(true) // End Installing Network Policy Engine in workload cluster
-	}
 
 		if a.keosCluster.Spec.DeployAutoscaler && !isMachinePool {
 			ctx.Status.Start("Installing cluster-autoscaler in workload cluster 🗚")
@@ -611,6 +610,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 
 			ctx.Status.End(true)
+		}
 
 		ctx.Status.Start("Installing keos cluster operator in workload cluster 💻")
 		defer ctx.Status.End(false)
