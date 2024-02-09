@@ -245,9 +245,9 @@ func (p *Provider) getAllowCAPXEgressIMDSGNetPol() (string, error) {
 			Managed: p.capxManaged,
 		}
 		allowEgressIMDSgnpContent, err = getManifest("azure", "allow-egress-imds_gnetpol.yaml.tmpl", azureParams)
-        if err != nil {
-            return "", errors.Wrap(err, "error opening the allow egress IMDS file")
-        }
+		if err != nil {
+			return "", errors.Wrap(err, "error opening the allow egress IMDS file")
+		}
     } else {
 		allowEgressIMDSGNetPolLocalPath := "files/" + p.capxProvider + "/allow-egress-imds_gnetpol.yaml"
 		allowEgressIMDSgnpFile, err := allowEgressIMDSgnpFiles.Open(allowEgressIMDSGNetPolLocalPath)
