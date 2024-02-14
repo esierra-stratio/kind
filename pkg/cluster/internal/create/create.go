@@ -18,7 +18,6 @@ package create
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/alessio/shellescape"
@@ -240,9 +239,10 @@ func logSalutation(logger log.Logger) {
 		"1. Post-installation Stratio cloud-provisioner documentation",
 		"2. Stratio KEOS documentation",
 	}
-	r := rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
-	s := salutations[r.Intn(len(salutations))]
-	logger.V(0).Info(s)
+
+    for _, salutation := range salutations {
+        logger.V(0).Info(salutation)
+    }
 }
 
 func fixupOptions(opts *ClusterOptions) error {
