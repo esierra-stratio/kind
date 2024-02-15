@@ -7,6 +7,7 @@
 * [Core] Add PDB and PriorityClass to capx components
 * [Core] Bump cluster api to v1.5.3
 * [Azure] Restric imds access
+* [Core] Add keos 1.1.x support
 
 ## 0.17.0-0.3.0 (2023-09-14)
 
