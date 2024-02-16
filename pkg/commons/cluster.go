@@ -127,9 +127,10 @@ type Networks struct {
 }
 
 type Subnets struct {
-	SubnetId  string `yaml:"subnet_id"`
+	SubnetId  string `yaml:"subnet_id,omitempty" validate:"required_with=CidrBlock,omitempty"`
 	CidrBlock string `yaml:"cidr,omitempty" validate:"omitempty,cidrv4"`
 	Role      string `yaml:"role,omitempty" validate:"omitempty,oneof='control-plane' 'node'"`
+	IsPublic  bool `yaml:"is_public,omitempty"`
 }
 
 type AWSCP struct {

@@ -209,7 +209,20 @@ func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.KeosSp
 				return errors.New("\"vpc_cidr\": CIDR block size must be at least /24 netmask")
 			}
 			if len(spec.Networks.Subnets) > 0 {
-				return errors.New("\"subnets\": are not supported when \"vpc_cidr\" is set")
+				hasPublic := false
+				hasPrivate := false
+				for _, subnet := range spec.Networks.Subnets {
+					if subnet.IsPublic {
+						hasPublic = true
+					} else {
+						hasPrivate = true
+					}
+				}
+				if !hasPublic {
+					return errors.New("\"is_public\": at least one subnet must be public")
+				} else if !hasPrivate {
+					return errors.New("\"is_public\": at least one subnet must be private")
+				}
 			}
 		}
 		if len(spec.Networks.PodsSubnets) > 0 {
