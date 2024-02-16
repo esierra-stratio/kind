@@ -1,14 +1,14 @@
 @Library('libpipelines') _
 
 hose {
-    EMAIL = 'eso'
+    EMAIL = 'clouds-integration@stratio.com'
     BUILDTOOL = 'make'
     DEVTIMEOUT = 30
-    BUILDTOOL_IMAGE = 'golang:1.19'
+    BUILDTOOL_IMAGE = 'golang:1.20'
     VERSIONING_TYPE = 'stratioVersion-3-3'
     UPSTREAM_VERSION = '0.17.0'
     DEPLOYONPRS = true
-    GRYPE_TEST = false
+    GRYPE_TEST = true
     BUILDTOOL_INSTALL = 'make'
     MODULE_LIST = [ "paas.cloud-provisioner:cloud-provisioner:tar.gz"]
     BUILDTOOL_MEMORY_REQUEST = "1024Mi"

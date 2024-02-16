@@ -105,7 +105,11 @@ func validateAzure(spec commons.KeosSpec, providerSecrets map[string]string, clu
 		}
 	}
 
+	firstRegistryType := spec.DockerRegistries[0].Type
 	for i, dr := range spec.DockerRegistries {
+		if firstRegistryType != dr.Type {
+			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": inconsistent registry types, the types among the defined registries must be the same")
+		}
 		if dr.Type != "acr" && spec.ControlPlane.Managed {
 			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": only acr is supported in azure managed clusters")
 		}
@@ -252,9 +256,18 @@ func validateAzureStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) 
 	}
 	// Validate tags
 	if sc.Parameters.Tags != "" {
-		if err = validateLabel(sc.Parameters.Tags); err != nil {
+		if err = validateAzureTag(sc.Parameters.Tags); err != nil {
 			return errors.Wrap(err, "invalid tags")
 		}
+	}
+	return nil
+}
+
+func validateAzureTag(t string) error {
+	// The following characters are not supported in Azure: <>%&\?/.
+	var isTag = regexp.MustCompile(`^([\w-]+=[\w-]+)(\s?,\s?[\w-]+=[\w-]+)*$`).MatchString
+	if !isTag(t) {
+		return errors.New("incorrect format. Must have the format 'key1=value1,key2=value2'")
 	}
 	return nil
 }
