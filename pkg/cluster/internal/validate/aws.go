@@ -192,7 +192,6 @@ func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.KeosSp
 			return errors.New("\"vpc_id\": is required when \"pods_subnets\" is set")
 		}
 	}
-
 	if spec.Networks.VPCCIDRBlock != "" {
 		const cidrSizeMin = 256
 		_, ipv4Net, err := net.ParseCIDR(spec.Networks.VPCCIDRBlock)
