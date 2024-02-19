@@ -126,8 +126,8 @@ func (b *AWSBuilder) installCloudProvider(n nodes.Node, k string, privateParams 
 		" --set args[1]=\"--cloud-provider=aws\"" +
 		" --set args[2]=\"--cluster-cidr=" + podsCidrBlock + "\"" +
 		" --set args[3]=\"--cluster-name=" + keosCluster.Metadata.Name + "\""
-	
-  if privateParams.Private {
+
+	if privateParams.Private {
 		c += " --set image.repository=" + privateParams.KeosRegUrl + "/provider-aws/cloud-controller-manager"
 	}
 
@@ -321,7 +321,7 @@ func (b *AWSBuilder) postInstallPhase(n nodes.Node, k string) error {
 	var coreDNSPDBName = "coredns"
 
 	c := "kubectl --kubeconfig " + kubeconfigPath + " get pdb " + coreDNSPDBName + " -n kube-system"
-	_, err := commons.ExecuteCommand(n, c)
+	_, err := commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		err = installCorednsPdb(n, k)
 		if err != nil {

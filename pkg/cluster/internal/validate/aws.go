@@ -415,6 +415,9 @@ func validateAWSInstanceType(cfg aws.Config, instanceType string) error {
 		return err
 	}
 
+	return nil
+}
+
 func validateAWSLabel(l string) error {
 	var isLabel = regexp.MustCompile(`^([\w\.\/-]+=[\w\.\/-]+)(\s?,\s?[\w\.\/-]+=[\w\.\/-]+)*$`).MatchString
 	if !isLabel(l) {

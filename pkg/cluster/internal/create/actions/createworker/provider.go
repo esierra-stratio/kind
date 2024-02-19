@@ -381,7 +381,7 @@ func (p *Provider) deployClusterOperator(n nodes.Node, privateParams PrivatePara
 			urlLogin := strings.Split(strings.Split(keosCluster.Spec.HelmRepository.URL, "//")[1], "/")[0]
 
 			c = "helm registry login " + urlLogin + " --username " + helmRepoCreds.User + " --password " + helmRepoCreds.Pass
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to add and authenticate to helm repository: "+helmRepoCreds.URL)
 			}
@@ -638,7 +638,7 @@ func (p *Provider) installCAPXWorker(n nodes.Node, keosCluster commons.KeosClust
 		return errors.Wrap(err, "failed to assigned priorityClass to "+p.capxName+"-controller-manager")
 	}
 	c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system rollout status deploy " + p.capxName + "-controller-manager --timeout 60s"
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to check rollout status for "+p.capxName+"-controller-manager")
 	}
@@ -650,7 +650,7 @@ func (p *Provider) installCAPXWorker(n nodes.Node, keosCluster commons.KeosClust
 		return errors.Wrap(err, "failed to scale CAPX in workload cluster")
 	}
 	c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system rollout status deploy " + p.capxName + "-controller-manager --timeout 60s"
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to check rollout status for "+p.capxName+"-controller-manager")
 	}
@@ -727,7 +727,7 @@ func (p *Provider) configCAPIWorker(n nodes.Node, keosCluster commons.KeosCluste
 			return errors.Wrap(err, "failed to assigned priorityClass to nmi")
 		}
 		c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system rollout status ds capz-nmi --timeout 60s"
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to check rollout status for nmi")
 		}
@@ -740,7 +740,7 @@ func (p *Provider) configCAPIWorker(n nodes.Node, keosCluster commons.KeosCluste
 		return errors.Wrap(err, "failed to scale the CAPI Deployment")
 	}
 	c = "kubectl --kubeconfig " + kubeconfigPath + " -n capi-system rollout status deploy capi-controller-manager --timeout 60s"
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to check rollout status for capi-controller-manager")
 	}
@@ -754,7 +754,7 @@ func (p *Provider) configCAPIWorker(n nodes.Node, keosCluster commons.KeosCluste
 				return errors.Wrap(err, "failed to scale the "+deployment.name+" deployment")
 			}
 			c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + deployment.namespace + " rollout status deploy " + deployment.name + " --timeout 60s"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to check rollout status for "+deployment.name)
 			}
@@ -939,13 +939,13 @@ func installCorednsPdb(n nodes.Node, k string) error {
 	}
 
 	c := "echo \"" + corednsPDB + "\" > " + corednsPdbPath
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to create coredns PodDisruptionBudget file")
 	}
 
 	c = "kubectl --kubeconfig " + kubeconfigPath + " apply -f " + corednsPdbPath
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to apply coredns PodDisruptionBudget")
 	}

@@ -182,7 +182,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Deleting local storage plugin 🎖️")
 		defer ctx.Status.End(false)
 		c = `kubectl delete -f ` + storageDefaultPath + ` --force`
-		_, err = commons.ExecuteCommand(n, c)
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return err
 		}
