@@ -158,17 +158,6 @@ func validateAWS(spec commons.KeosSpec, providerSecrets map[string]string) error
 
 func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.KeosSpec) error {
 	var err error
-	if spec.Networks.PodsCidrBlock != "" {
-		if spec.ControlPlane.Managed {
-			if err = validateAWSPodsNetwork(spec.Networks.PodsCidrBlock); err != nil {
-				return err
-			}
-		}
-	} else {
-		if len(spec.Networks.PodsSubnets) > 0 {
-			return errors.New("\"pods_cidr\": is required when \"pods_subnets\" is set")
-		}
-	}
 	if spec.Networks.VPCID != "" {
 		if spec.Networks.VPCCIDRBlock != "" {
 			return errors.New("\"vpc_id\" and \"vpc_cidr\" are mutually exclusive")
@@ -209,14 +198,25 @@ func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.KeosSp
 				return errors.New("\"vpc_cidr\": CIDR block size must be at least /24 netmask")
 			}
 			if len(spec.Networks.Subnets) > 0 {
-				return errors.New("\"subnets\": is not supported when vpc_cidr is defined")
+				return errors.New("\"subnets\": are not supported when \"vpc_cidr\" is defined")
 			}
-			if len(spec.Networks.PodsSubnets) > 0 {
+			if len(spec.Networks.PodsCidrBlock) > 0 {
 				return errors.New("\"pods_cidr\": is not supported when vpc_cidr is defined")
 			}
 		}
 		if len(spec.Networks.PodsSubnets) > 0 {
 			return errors.New("\"vpc_id\": is required when \"pods_subnets\" is set")
+		}
+	}
+	if spec.Networks.PodsCidrBlock != "" {
+		if spec.ControlPlane.Managed {
+			if err = validateAWSPodsNetwork(spec.Networks.PodsCidrBlock); err != nil {
+				return err
+			}
+		}
+	} else {
+		if len(spec.Networks.PodsSubnets) > 0 {
+			return errors.New("\"pods_cidr\": is required when \"pods_subnets\" is set")
 		}
 	}
 	return nil
