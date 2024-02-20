@@ -186,6 +186,9 @@ func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.KeosSp
 					}
 				}
 			}
+			if len(spec.Networks.PodsSubnets) > 0 && spec.Networks.PodsCidrBlock != "" {
+                                return errors.New("\"pods_cidr\": is ignored when \"pods_subnets\" is set")
+			}
 		}
 	} else {
 		if len(spec.Networks.PodsSubnets) > 0 {
@@ -205,19 +208,12 @@ func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.KeosSp
 		if len(spec.Networks.Subnets) > 0 {
 			return errors.New("\"subnets\": are not supported when \"vpc_cidr\" is defined")
 		}
-		if len(spec.Networks.PodsCidrBlock) > 0 {
-			return errors.New("\"pods_cidr\": is not supported when vpc_cidr is defined")
-		}
 	}
 	if spec.Networks.PodsCidrBlock != "" {
 		if spec.ControlPlane.Managed {
 			if err = validateAWSPodsNetwork(spec.Networks.PodsCidrBlock); err != nil {
 				return err
 			}
-		}
-	} else {
-		if len(spec.Networks.PodsSubnets) > 0 {
-			return errors.New("\"pods_cidr\": is required when \"pods_subnets\" is set")
 		}
 	}
 	return nil
