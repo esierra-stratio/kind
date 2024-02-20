@@ -132,12 +132,14 @@ func (b *AzureBuilder) installCloudProvider(n nodes.Node, k string, privateParam
 		" --kubeconfig " + k +
 		" --namespace kube-system" +
 		" --set infra.clusterName=" + keosCluster.Metadata.Name +
+		" --set cloudControllerManager.configureCloudRoutes=false" +
+		" --set cloudControllerManager.replicas=2" +
 		" --set 'cloudControllerManager.clusterCIDR=" + podsCidrBlock + "'"
 	if privateParams.Private {
 		c += " --set cloudControllerManager.imageRepository=" + privateParams.KeosRegUrl + "/oss/kubernetes" +
 			" --set cloudNodeManager.imageRepository=" + privateParams.KeosRegUrl + "/oss/kubernetes"
 	}
-	_, err := commons.ExecuteCommand(n, c)
+	_, err := commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cloud-provider-azure Helm Chart")
 	}
@@ -158,7 +160,7 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string, privateParams PrivateP
 		c += " --set image.baseRepo=" + privateParams.KeosRegUrl
 	}
 
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
 	}
@@ -173,7 +175,7 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string, privateParams PrivateP
 		c += " --set image.baseRepo=" + privateParams.KeosRegUrl
 	}
 
-	_, err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure File CSI driver Helm Chart")
 	}
@@ -227,14 +229,14 @@ func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string) error {
 	if b.capxManaged {
 		// Remove annotation from default storage class
 		c = "kubectl --kubeconfig " + k + ` get sc -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}'`
-		output, err := commons.ExecuteCommand(n, c)
+		output, err := commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to get default storage class")
 		}
 
 		if strings.TrimSpace(output) != "" && strings.TrimSpace(output) != "No resources found" {
 			c = "kubectl --kubeconfig " + k + " annotate sc " + strings.TrimSpace(output) + " " + defaultScAnnotation + "-"
-			_, err = commons.ExecuteCommand(n, c)
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to remove annotation from default storage class")
 			}
@@ -323,7 +325,10 @@ func (b *AzureBuilder) getOverrideVars(p ProviderParams, networks commons.Networ
 }
 
 func (b *AzureBuilder) postInstallPhase(n nodes.Node, k string) error {
+	var coreDNSPDBName = "coredns-pdb"
 	if b.capxManaged {
+		coreDNSPDBName = "coredns-pdb"
+
 		err := patchDeploy(n, k, "kube-system", "coredns", "{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\""+postInstallAnnotation+"\": \"tmp\"}}}}}")
 		if err != nil {
 			return errors.Wrap(err, "failed to add podAnnotation to coredns")
@@ -341,6 +346,15 @@ func (b *AzureBuilder) postInstallPhase(n nodes.Node, k string) error {
 		err := patchDeploy(n, k, "kube-system", "cloud-controller-manager", "{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\""+postInstallAnnotation+"\": \"etc-kubernetes,ssl-mount,msi\"}}}}}")
 		if err != nil {
 			return errors.Wrap(err, "failed to add podAnnotation to cloud-controller-manager")
+		}
+	}
+
+	c := "kubectl --kubeconfig " + kubeconfigPath + " get pdb " + coreDNSPDBName + " -n kube-system"
+	_, err := commons.ExecuteCommand(n, c, 5)
+	if err != nil {
+		err = installCorednsPdb(n, k)
+		if err != nil {
+			return errors.Wrap(err, "failed to add core dns PDB")
 		}
 	}
 	return nil
