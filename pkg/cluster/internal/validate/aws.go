@@ -189,7 +189,6 @@ func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.KeosSp
 			if len(spec.Networks.PodsSubnets) > 0 && spec.Networks.PodsCidrBlock != "" {
                                 return errors.New("\"pods_cidr\": is ignored when \"pods_subnets\" is set")
 			}
-            - subnet_id: subnet-0c131a77f9fcdc49d
 		}
 	} else {
 		if len(spec.Networks.PodsSubnets) > 0 {
