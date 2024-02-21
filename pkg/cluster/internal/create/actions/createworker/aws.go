@@ -179,7 +179,7 @@ func installLBController(n nodes.Node, k string, privateParams PrivateParams, p 
 		c += " --set image.repository=" + privateParams.KeosRegUrl + "/eks/aws-load-balancer-controller"
 	}
 
-	_, err := commons.ExecuteCommand(n, c)
+	_, err := commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy aws-load-balancer-controller Helm Chart")
 	}
