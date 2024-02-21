@@ -58,7 +58,9 @@ type Metadata struct {
 }
 
 type ClusterConfigSpec struct {
-	Private bool `yaml:"private_registry"`
+	Private                     bool   `yaml:"private_registry"`
+	ClusterOperatorVersion      string `yaml:"cluster_operator_version,omitempty"`
+	ClusterOperatorImageVersion string `yaml:"cluster_operator_image_version,omitempty"`
 }
 
 type ClusterConfigRef struct {
@@ -360,7 +362,7 @@ func (s KeosSpec) Init() KeosSpec {
 	s.DeployAutoscaler = true
 
 	// EKS
-	s.Security.AWS.CreateIAM = true
+	s.Security.AWS.CreateIAM = false
 	s.ControlPlane.AWS.AssociateOIDCProvider = true
 	s.ControlPlane.AWS.Logging.ApiServer = false
 	s.ControlPlane.AWS.Logging.Audit = false
