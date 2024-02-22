@@ -949,11 +949,11 @@ Para garantizar una configuración adecuada de _aws-load-balancer-controller-man
 ----
 export AWS_ACCOUNT_ID=<account_id>
 export AWS_REGION=<aws_region>
+export AWS_VPC_ID=<vpc_id>
 export AWS_EKS_CLUSTER_NAME=<aws_eks_cluster_name>
 export AWS_EKS_OIDC_ID=$(aws eks describe-cluster --region ${AWS_REGION} --name ${AWS_EKS_CLUSTER_NAME} --query 'cluster.identity.oidc.issuer' --output text | awk -F'/' '{print $NF}')
 export AWS_IAM_POLICY_NAME="${AWS_EKS_CLUSTER_NAME}-lb-controller-manager"
 export AWS_IAM_ROLE_NAME="${AWS_EKS_CLUSTER_NAME}-lb-controller-manager"
-export AWS_VPC_ID=<vpc_id>
 ----
 
 * https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/id_roles_create.html[Crear el rol de IAM] que utilizará la _service account_ del despliegue de aws-load-balancer-controller-manager_ con la siguiente política de confianza:
@@ -972,7 +972,7 @@ $ cat << EOF > trustpolicy.json
             "Action": "sts:AssumeRoleWithWebIdentity",
             "Condition": {
                 "StringEquals": {
-                    "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:sub": "system:serviceaccount:kube-system:external-dns",
+                    "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:sub": "system:serviceaccount:kube-system:${AWS_EKS_CLUSTER_NAME}-lb-controller-manager",
                     "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:aud": "sts.amazonaws.com"
                 }
             }
