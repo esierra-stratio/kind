@@ -972,7 +972,7 @@ $ cat << EOF > trustpolicy.json
             "Action": "sts:AssumeRoleWithWebIdentity",
             "Condition": {
                 "StringEquals": {
-                    "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:sub": "system:serviceaccount:kube-system:${AWS_EKS_CLUSTER_NAME}-lb-controller-manager",
+                    "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller",
                     "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:aud": "sts.amazonaws.com"
                 }
             }
