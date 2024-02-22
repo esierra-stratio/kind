@@ -11,7 +11,8 @@ Para el aprovisionamiento automatizado en AWS/EKS, se necesita ejecutar acciones
 ** xref:attachment$stratio-eks-policy.json[Descargar permisos permanentes para EKS]
 ** xref:attachment$stratio-aws-temp-policy.json[Descargar permisos temporales para EKS]
 
-Para el despliegue de EKS se deberá de crear de forma manual el role: "AWSServiceRoleForAmazonEKS" y asociarle la política "AmazonEKSServiceRolePolicy".
++
+Para el despliegue de EKS se deberá crear de forma manual el rol "AWSServiceRoleForAmazonEKS" y asociarle la política "AmazonEKSServiceRolePolicy" (creada por defecto en AWS).
 
 * Sistemas operativos certificados
 +
@@ -24,8 +25,8 @@ En el caso de los despliegues en AWS no gestionado, se deberá utilizar https://
 El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04.
 
 * CloudFormation
-
-En caso de no haber creado el stack de cloudformation con anterioridad en la cuenta, se deberá de poner el parámetro spec:security:aws:create_iam a true, en caso contrario false.
++
+WARNING: Si no has creado el _stack_ de CloudFormation o no has creado manualmente los requisitos de IAM previamente en la cuenta, debes establecer el parámetro `spec:security:aws:create_iam` como _true_ (por defecto es _false_).
 
 === GCP no gestionado
 
@@ -443,64 +444,178 @@ metadata:
 spec:
   infra_provider: aws
   credentials:
-  aws:
-    region: eu-west-1
-    access_key: AKIAT4..
-    account_id: '3683675..'
-    secret_key: wq3/Vsc..
-  github_token: github_pat_11APW..
+    aws:
+      region: eu-west-1
+      access_key: AKIAT4..
+      account_id: '3683675..'
+      secret_key: wq3/Vsc..
+    github_token: github_pat_11APW..
   k8s_version: v1.26.7
   region: eu-west-1
   external_domain: domain.ext
   networks:
-  vpc_id: vpc-02698..
-  subnets:
-    - subnet_id: subnet-0416d..
-    - subnet_id: subnet-0b2f8..
-    - subnet_id: subnet-0df75..
+    vpc_id: vpc-02698..
+    subnets:
+      - subnet_id: subnet-0416d..
+      - subnet_id: subnet-0b2f8..
+      - subnet_id: subnet-0df75..
   docker_registries:
-  - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
+    - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
+      auth_required: false
+      type: ecr
+      keos_registry: true
+  helm_repository:
     auth_required: false
-    type: ecr
-    keos_registry: true
+    url: http://charts.stratio.com
   storageclass:
-  parameters:
-    type: gp3
-    fsType: ext4
-    encrypted: "true"
-    labels: "owner=stratio"
+    parameters:
+      type: gp3
+      fsType: ext4
+      encrypted: "true"
+      labels: "owner=stratio"
   keos:
-  flavour: production
-  version: 1.0.2
+    flavour: production
+    version: 1.0.4
+  security:
+    aws:
+      create_iam: false
   control_plane:
-  aws:
-    logging:
-    api_server: true
-  managed: true
+    aws:
+      logging:
+        api_server: true
+    managed: true
   worker_nodes:
-  - name: eks-prod-xlarge
-    quantity: 6
-    max_size: 18
-    min_size: 6
+    - name: eks-prod-xlarge
+      quantity: 6
+      max_size: 18
+      min_size: 6
+      size: m6i.xlarge
+      labels:
+        disktype: standard
+      root_volume:
+        size: 50
+        type: gp3
+        encrypted: true
+      ssh_key: stg-key
+    - name: eks-prod-medium-spot
+      quantity: 4
+      zone_distribution: unbalanced
+      size: t3.medium
+      spot: true
+      labels:
+        disktype: standard
+    - name: eks-prod-medium-az
+      quantity: 3
+      size: t3.medium
+      az: eu-west-1c
+----
+
+==== AWS no gestionado
+
+En este ejemplo se pueden ver las siguientes particularidades:
+
+* _Cluster_ en AWS con _control-plane_ no gestionado.
+* Kubernetes versión 1.26.x.
+* Uso de ECR como _Docker registry_ (no necesita credenciales).
+* Uso de VPC y _subnets_ personalizadas (creadas anteriormente). Este apartado es opcional.
+* Definición de una _StorageClass_ por defecto. Este apartado es opcional.
+* Grupos de nodos _worker_ con múltiples casuísticas:
+** Diferentes tipos de instancia.
+** Con clave SSH.
+** Con etiquetas de K8s.
+** Con rangos de autoescalado.
+** En una zona fija.
+** Con personalizaciones en el disco.
+** Con instancias tipo _spot_.
+** Casos de distribución en AZs: balanceado y desbalanceado.
+
+[source,yaml]
+----
+apiVersion: installer.stratio.com/v1beta1
+kind: KeosCluster
+metadata:
+  name: aws-prod
+spec:
+  infra_provider: aws
+  credentials:
+    aws:
+      region: eu-west-1
+      access_key: AKIAT4..
+      account_id: '3683675..'
+      secret_key: wq3/Vsc..
+    github_token: github_pat_11APW..
+  k8s_version: v1.26.7
+  region: eu-west-1
+  external_domain: domain.ext
+  networks:
+    vpc_id: vpc-02698..
+    subnets:
+      - subnet_id: subnet-0416d..
+      - subnet_id: subnet-0b2f8..
+      - subnet_id: subnet-0df75..
+      - subnet_id: subnet-88789..
+      - subnet_id: subnet-89785..
+      - subnet_id: subnet-84281..
+    pods_subnets:
+      - subnet_id: subnet-0416d..
+      - subnet_id: subnet-0b2f8..
+      - subnet_id: subnet-0df75..
+    pods_cidr: 100.64.0.0/16
+  docker_registries:
+    - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
+      auth_required: false
+      type: ecr
+      keos_registry: true
+  helm_repository:
+    auth_required: false
+    url: http://charts.stratio.com
+  storageclass:
+    parameters:
+      type: gp3
+      fsType: ext4
+      encrypted: "true"
+      labels: "owner=stratio"
+  keos:
+    flavour: production
+    version: 1.0.4
+  security:
+    aws:
+      create_iam: false
+  control_plane:
+    managed: false
+    name: aws-prod-cp
     size: m6i.xlarge
-    labels:
-    disktype: standard
+    node_image: ami-0de933c15c9b49fb5
     root_volume:
-    size: 50
-    type: gp3
-    encrypted: true
-    ssh_key: stg-key
-  - name: eks-prod-medium-spot
-    quantity: 4
-    zone_distribution: unbalanced
-    size: t3.medium
-    spot: true
-    labels:
-    disktype: standard
-  - name: eks-prod-medium-az
-    quantity: 3
-    size: t3.medium
-    az: eu-west-1c
+      size: 50
+      type: gp3
+  worker_nodes:
+    - name: aws-prod-xlarge
+      quantity: 6
+      max_size: 18
+      min_size: 6
+      size: m6i.xlarge
+      node_image: ami-0de933c15c9b49fb5
+      labels:
+        disktype: standard
+      root_volume:
+        size: 50
+        type: gp3
+        encrypted: true
+      ssh_key: stg-key
+    - name: aws-prod-medium-spot
+      quantity: 4
+      node_image: ami-0de933c15c9b49fb5
+      zone_distribution: unbalanced
+      size: t3.medium
+      spot: true
+      labels:
+        disktype: standard
+    - name: aws-prod-medium-az
+      quantity: 3
+      node_image: ami-0de933c15c9b49fb5
+      size: t3.medium
+      az: eu-west-1c
 ----
 
 ==== GCP
@@ -550,10 +665,13 @@ spec:
   k8s_version: v1.26.8
   region: europe-west4
   docker_registries:
-    - url: eosregistry.azurecr.io/keos
+      - url: eosregistry.azurecr.io/keos
+        auth_required: true
+        type: generic
+        keos_registry: true
+  helm_repository:
       auth_required: false
-      type: acr
-      keos_registry: true
+      url: http://charts.stratio.com
   dns:
     manage_zone: false
   external_domain: domain.ext
@@ -565,7 +683,7 @@ spec:
       labels: "owner=stratio"
   keos:
     flavour: production
-    version: 1.0.2
+    version: 1.0.4
   control_plane:
     managed: false
     highly_available: true
@@ -642,26 +760,30 @@ spec:
       auth_required: false
       type: acr
       keos_registry: true
-  networks:
-    pods_cidr: 172.16.0.0/20
+  helm_repository:
+    auth_required: false
+    url: http://charts.stratio.com
   storageclass:
     parameters:
-      type: Standard_LRS
+      type: StandardSSD_LRS
       fsType: ext4
       tags: "owner=stratio"
   external_domain: domain.ext
+  dns:
+    manage_zone: false
   keos:
     flavour: production
-    version: 1.0.2
+    version: 1.0.4
   security:
     control_plane_identity: "/subscriptions/6e2a38cd-../stratio-control-plane"
     nodes_identity: "/subscriptions/6e2a38cd-../stratio-nodes"
   control_plane:
     managed: false
     size: Standard_D8_v3
+    node_image: "/subscriptions/6e2a38cd-../images/capi-ubuntu-2204-1687262553"
     root_volume:
       size: 100
-      type: Standard_LRS
+      type: StandardSSD_LRS
   worker_nodes:
     - name: azure-prod-std
       quantity: 3
@@ -673,7 +795,7 @@ spec:
         backup: "false"
       root_volume:
         size: 100
-        type: Standard_LRS
+        type: StandardSSD_LRS
 ----
 
 ==== AKS
@@ -708,36 +830,38 @@ spec:
   region: westeurope
   docker_registries:
     - url: eosregistry.azurecr.io/keos
-    auth_required: false
-    type: acr
-    keos_registry: true
+      auth_required: false
+      type: acr
+      keos_registry: true
   helm_repository:
     auth_required: false
     url: http://charts.stratio.com
   networks:
     pods_cidr: 172.16.0.0/20
   storageclass:
-    encryption_key: myKey
     class: premium
   external_domain: domain.ext
   keos:
     flavour: production
-    version: 1.0.2
+    version: 1.0.4
+  security:
+    control_plane_identity: "/subscriptions/6e2a38cd-../stratio-control-plane"
+    nodes_identity: "/subscriptions/6e2a38cd-../stratio-nodes"
   control_plane:
     azure:
       tier: Paid
     managed: true
   worker_nodes:
-    - name: aks-prod-prem
-    quantity: 3
-    max_size: 18
-    min_size: 3
-    size: Standard_D8s_v3
-    labels:
-      premium_sc: "true"
-    root_volume:
-      size: 50
-      type: Managed
+    - name: worker1
+      quantity: 3
+      max_size: 18
+      min_size: 3
+      size: Standard_D8s_v3
+      labels:
+        premium_sc: "true"
+      root_volume:
+        size: 50
+        type: Managed
 ----
 
 == Creación del _cluster_
@@ -758,7 +882,6 @@ Para crear un _cluster_, basta con un simple comando (consulta las particularida
 -----
 sudo ./cloud-provisioner create cluster --name stratio-pre --descriptor cluster-gcp.yaml
 Vault Password:
-Rewrite Vault Password:
 Creating temporary cluster "stratio-pre" ...
  ✓ Ensuring node image (kindest/node:v1.27.0) 🖼
  ✓ Building Stratio image (stratio-capi-image:v1.27.0) 📸
@@ -768,11 +891,14 @@ Creating temporary cluster "stratio-pre" ...
  ✓ Installing CNI 🔌
  ✓ Installing StorageClass 💾
  ✓ Installing CAPx 🎖️
- ✓ Generating workload cluster manifests 📝
  ✓ Generating secrets file 📝🗝️
  ✓ Installing keos cluster operator 💻
+ ✓ [CAPA] Ensuring IAM security 👮
  ✓ Creating the workload cluster 💥
  ✓ Saving the workload cluster kubeconfig 📝
+ ✓ Installing cloud-provider in workload cluster ☁️
+ ✓ Installing Calico in workload cluster 🔌
+ ✓ Installing CSI in workload cluster 💾
  ✓ Preparing nodes in workload cluster 📦
  ✓ Installing StorageClass in workload cluster 💾
  ✓ Enabling workload cluster's self-healing 🏥
@@ -782,9 +908,11 @@ Creating temporary cluster "stratio-pre" ...
  ✓ Installing keos cluster operator in workload cluster 💻
  ✓ Creating cloud-provisioner Objects backup 🗄️
  ✓ Moving the management role 🗝️
+ ✓ Executing post-install steps 🎖️
  ✓ Generating the KEOS descriptor 📝
+ ✓ Cleaning up temporary cluster 🧹
 
-The cluster has been installed, please refer to _Stratio KEOS_ documentation on how to proceed.
+The cluster has been installed, please refer to Stratio KEOS documentation on how to proceed.
 -----
 
 Una vez finalizado el proceso, tendrás los ficheros necesarios (_keos.yaml_ y _secrets.yml_) para instalar _Stratio KEOS_.
@@ -798,3 +926,132 @@ Debido a un error en los distintos _controllers_ (solucionado en ramas master pe
 Eventualmente, esto podría generar problemas en las peticiones en caso de fallo de alguno de los nodos del _control-plane_, dado que el balanceador de carga enviará peticiones a los nodos del _control-plane_ cuyo puerto responda pero no pueda atender peticiones.
 
 Para evitar este problema, se deberá modificar el _health check_ del balanceador de carga creado, utilizando el protocolo HTTPS y la ruta _/readyz_. El puerto deberá mantenerse, siendo para GCP el 443 y para Azure el 6443.
+
+== Pasos requeridos después de la instalación
+
+Antes de desplegar _Stratio KEOS_ en un entorno, hay que asegurarse que ciertos pasos manuales han de ser ejecutados previo despliegue de la solución de KEOS para asegurar una instalación con éxito.
+
+A día de hoy estas acciones son requeridas para entornos en la nube pública _AWS_ con _AWS Elastic Kubernetes Service_, conocido popularmente como EKS o internamente como entorno gestionado.
+
+=== _aws-load-balancer-controller-manager_
+
+Se trata de un operador encargado de la creación _Elastic Load Balancers_ para clústeres de _Kubernetes_ asistiendo en la creación de objetos tales como: _ingress_ y servicios de tipo _LoadBalancer_.
+
+Para garantizar una configuración adecuada de _aws-load-balancer-controller-manager_ (habilitado por defecto en entornos gestionados, EKS) es fundamental seguir una serie de pasos en los que se incluye la integración con https://docs.aws.amazon.com/es_es/eks/latest/userguide/iam-roles-for-service-accounts.html[IRSA]:
+
+==== Amazon Web Services (AWS)
+
+===== AWS Elastic Kubernetes Service (EKS)
+
+* Definir las siguientes variables de entorno:
+
+[source,shell]
+----
+export AWS_ACCOUNT_ID=<account_id>
+export AWS_REGION=<aws_region>
+export AWS_VPC_ID=<vpc_id>
+export AWS_EKS_CLUSTER_NAME=<aws_eks_cluster_name>
+export AWS_EKS_OIDC_ID=$(aws eks describe-cluster --region ${AWS_REGION} --name ${AWS_EKS_CLUSTER_NAME} --query 'cluster.identity.oidc.issuer' --output text | awk -F'/' '{print $NF}')
+export AWS_IAM_POLICY_NAME="${AWS_EKS_CLUSTER_NAME}-lb-controller-manager"
+export AWS_IAM_ROLE_NAME="${AWS_EKS_CLUSTER_NAME}-lb-controller-manager"
+----
+
+* https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/id_roles_create.html[Crear el rol de IAM] que utilizará la _service account_ del despliegue de aws-load-balancer-controller-manager_ con la siguiente política de confianza:
+
+[source,console]
+----
+$ cat << EOF > trustpolicy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller",
+                    "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:aud": "sts.amazonaws.com"
+                }
+            }
+        }
+    ]
+}
+EOF
+$ aws iam create-role --role-name ${AWS_IAM_ROLE_NAME} --assume-role-policy-document file://trustpolicy.json
+----
+
+* https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/access_policies_create.html[Crear la política IAM] con los permisos estrictamente necesarios:
+
+[source,console]
+----
+$ cat << EOF > policy.json
+{
+	"Statement": [
+		{
+			"Action": [
+        			"ec2:DescribeAvailabilityZones",
+				"ec2:DescribeSecurityGroups",
+				"ec2:DescribeSubnets",
+				"elasticloadbalancing:DescribeListeners",
+				"elasticloadbalancing:DescribeLoadBalancers",
+				"elasticloadbalancing:DescribeLoadBalancerAttributes",
+				"elasticloadbalancing:DescribeRules",
+				"elasticloadbalancing:DescribeTags",
+				"elasticloadbalancing:DescribeTargetGroups",
+				"elasticloadbalancing:DescribeTargetGroupAttributes",
+				"elasticloadbalancing:DescribeTargetHealth"
+			],
+			"Effect": "Allow",
+			"Resource": "*"
+		},
+		{
+			"Action": [
+				"ec2:AuthorizeSecurityGroupIngress",
+				"ec2:CreateSecurityGroup",
+        			"ec2:CreateTags",
+				"ec2:DeleteSecurityGroup",
+				"ec2:RevokeSecurityGroupIngress"
+			],
+			"Effect": "Allow",
+			"Resource": [
+				"arn:aws:ec2:${AWS_REGION}:${AWS_ACCOUNT_ID}:vpc/${AWS_VPC_ID}",
+				"arn:aws:ec2:${AWS_REGION}:${AWS_ACCOUNT_ID}:security-group/*"
+			]
+		},
+		{
+			"Action": [
+				"elasticloadbalancing:AddTags",
+				"elasticloadbalancing:CreateListener",
+				"elasticloadbalancing:CreateLoadBalancer",
+				"elasticloadbalancing:CreateTargetGroup",
+				"elasticloadbalancing:DeleteLoadBalancer",
+				"elasticloadbalancing:DeleteTargetGroup",
+				"elasticloadbalancing:DeregisterTargets",
+				"elasticloadbalancing:ModifyLoadBalancerAttributes",
+				"elasticloadbalancing:ModifyTargetGroup",
+				"elasticloadbalancing:RegisterTargets"
+			],
+			"Effect": "Allow",
+			"Resource": "*",
+			"Condition": {
+				"StringEquals": {
+					"aws:ResourceTag/elbv2.k8s.aws/cluster": "${AWS_EKS_CLUSTER_NAME}"
+				}
+			}
+		}
+	],
+	"Version": "2012-10-17"
+}
+EOF
+$ aws iam create-policy --policy-name ${AWS_IAM_POLICY_NAME} --policy-document file://policy.json
+----
+
+* https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/access_policies_manage-attach-detach.html[Asociar la política IAM] al rol creado anteriormente:
+
+[source,console]
+----
+$ aws iam attach-role-policy --role-name ${AWS_IAM_ROLE_NAME} --policy-arn arn:aws:iam::${AWS_ACCOUNT_ID}:policy/${AWS_IAM_POLICY_NAME}
+----

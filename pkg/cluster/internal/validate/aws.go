@@ -99,6 +99,9 @@ func validateAWS(spec commons.KeosSpec, providerSecrets map[string]string) error
 				return errors.New("spec.control_plane: Invalid value: \"node_image\": must have the format " + AWSNodeImageFormat)
 			}
 		}
+		if err := validateAWSInstanceType(cfg, spec.ControlPlane.Size); err != nil {
+			return errors.New("spec.control_plane.size: " + spec.ControlPlane.Size + " does not exists in AWS instance types")
+		}
 		if err := validateVolumeType(spec.ControlPlane.RootVolume.Type, AWSVolumes); err != nil {
 			return errors.Wrap(err, "spec.control_plane.root_volume: Invalid value: \"type\"")
 		}
@@ -133,6 +136,11 @@ func validateAWS(spec commons.KeosSpec, providerSecrets map[string]string) error
 				}
 			}
 		}
+		if wn.Size != "" {
+			if err := validateAWSInstanceType(cfg, wn.Size); err != nil {
+				return errors.New("spec.worker_nodes." + wn.Name + ".size: " + wn.Size + " does not exists in AWS instance types")
+			}
+		}
 		if err := validateVolumeType(wn.RootVolume.Type, AWSVolumes); err != nil {
 			return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".root_volume: Invalid value: \"type\"")
 		}
@@ -158,17 +166,7 @@ func validateAWS(spec commons.KeosSpec, providerSecrets map[string]string) error
 
 func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.KeosSpec) error {
 	var err error
-	if spec.Networks.PodsCidrBlock != "" {
-		if spec.ControlPlane.Managed {
-			if err = validateAWSPodsNetwork(spec.Networks.PodsCidrBlock); err != nil {
-				return err
-			}
-		}
-	} else {
-		if len(spec.Networks.PodsSubnets) > 0 {
-			return errors.New("\"pods_cidr\": is required when \"pods_subnets\" is set")
-		}
-	}
+
 	if spec.Networks.VPCID != "" {
 		if spec.Networks.VPCCIDRBlock != "" {
 			return errors.New("\"vpc_id\" and \"vpc_cidr\" are mutually exclusive")
@@ -196,24 +194,34 @@ func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.KeosSp
 					}
 				}
 			}
+			if len(spec.Networks.PodsSubnets) > 0 && spec.Networks.PodsCidrBlock != "" {
+				return errors.New("\"pods_cidr\": is ignored when \"pods_subnets\" are set")
+			}
 		}
 	} else {
-		if spec.Networks.VPCCIDRBlock != "" {
-			const cidrSizeMin = 256
-			_, ipv4Net, err := net.ParseCIDR(spec.Networks.VPCCIDRBlock)
-			if err != nil {
-				return errors.New("\"vpc_cidr\": CIDR block must be a valid IPv4 CIDR block")
-			}
-			cidrSize := cidr.AddressCount(ipv4Net)
-			if cidrSize < cidrSizeMin {
-				return errors.New("\"vpc_cidr\": CIDR block size must be at least /24 netmask")
-			}
-			if len(spec.Networks.Subnets) > 0 {
-				return errors.New("\"subnets\": are not supported when \"vpc_cidr\" is set")
-			}
-		}
 		if len(spec.Networks.PodsSubnets) > 0 {
 			return errors.New("\"vpc_id\": is required when \"pods_subnets\" is set")
+		}
+	}
+	if spec.Networks.VPCCIDRBlock != "" {
+		const cidrSizeMin = 256
+		_, ipv4Net, err := net.ParseCIDR(spec.Networks.VPCCIDRBlock)
+		if err != nil {
+			return errors.New("\"vpc_cidr\": CIDR block must be a valid IPv4 CIDR block")
+		}
+		cidrSize := cidr.AddressCount(ipv4Net)
+		if cidrSize < cidrSizeMin {
+			return errors.New("\"vpc_cidr\": CIDR block size must be at least /24 netmask")
+		}
+		if len(spec.Networks.Subnets) > 0 {
+			return errors.New("\"subnets\": are not supported when \"vpc_cidr\" is defined")
+		}
+	}
+	if spec.Networks.PodsCidrBlock != "" {
+		if spec.ControlPlane.Managed {
+			if err = validateAWSPodsNetwork(spec.Networks.PodsCidrBlock); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -390,6 +398,23 @@ func validateAWSStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) er
 			return errors.Wrap(err, "invalid labels")
 		}
 	}
+	return nil
+}
+
+func validateAWSInstanceType(cfg aws.Config, instanceType string) error {
+
+	client := ec2.NewFromConfig(cfg)
+
+	// Call DescribeInstanceTypes API to get details about the instance type
+	diti := &ec2.DescribeInstanceTypesInput{
+		InstanceTypes: []types.InstanceType{types.InstanceType(instanceType)},
+	}
+
+	_, err := client.DescribeInstanceTypes(context.TODO(), diti)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -58,7 +58,19 @@ type Metadata struct {
 }
 
 type ClusterConfigSpec struct {
-	Private bool `yaml:"private_registry"`
+	Private                     bool               `yaml:"private_registry"`
+	ControlplaneConfig          ControlplaneConfig `yaml:"controlplane_config"`
+	WorkersConfig               WorkersConfig      `yaml:"workers_config"`
+	ClusterOperatorVersion      string             `yaml:"cluster_operator_version,omitempty"`
+	ClusterOperatorImageVersion string             `yaml:"cluster_operator_image_version,omitempty"`
+}
+
+type ControlplaneConfig struct {
+	MaxUnhealthy *int `yaml:"max_unhealthy,omitempty" validate:"omitempty,numeric,gte=0,lte=100"`
+}
+
+type WorkersConfig struct {
+	MaxUnhealthy *int `yaml:"max_unhealthy,omitempty" validate:"omitempty,numeric,gte=0,lte=100"`
 }
 
 type ClusterConfigRef struct {
@@ -95,10 +107,7 @@ type KeosSpec struct {
 
 	Security Security `yaml:"security,omitempty"`
 
-	Keos struct {
-		Flavour string `yaml:"flavour,omitempty"`
-		Version string `yaml:"version,omitempty"`
-	} `yaml:"keos,omitempty"`
+	Keos Keos `yaml:"keos,omitempty"`
 
 	ControlPlane struct {
 		Managed         bool                `yaml:"managed" validate:"boolean"`
@@ -115,6 +124,11 @@ type KeosSpec struct {
 	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
 
 	ClusterConfigRef ClusterConfigRef `yaml:"cluster_config_ref,omitempty" validate:"dive"`
+}
+
+type Keos struct {
+	Flavour string `yaml:"flavour,omitempty"`
+	Version string `yaml:"version,omitempty"`
 }
 
 type Networks struct {
@@ -159,7 +173,7 @@ type Security struct {
 type WorkerNodes []struct {
 	Name             string            `yaml:"name" validate:"required"`
 	NodeImage        string            `yaml:"node_image,omitempty"`
-	Quantity         int               `yaml:"quantity" validate:"required,numeric,gt=0"`
+	Quantity         *int              `yaml:"quantity" validate:"required,numeric,gte=0"`
 	Size             string            `yaml:"size" validate:"required"`
 	ZoneDistribution string            `yaml:"zone_distribution,omitempty" validate:"omitempty,oneof='balanced' 'unbalanced'"`
 	AZ               string            `yaml:"az,omitempty"`
@@ -167,8 +181,8 @@ type WorkerNodes []struct {
 	Spot             bool              `yaml:"spot,omitempty" validate:"boolean"`
 	Labels           map[string]string `yaml:"labels,omitempty"`
 	Taints           []string          `yaml:"taints,omitempty"`
-	NodeGroupMaxSize int               `yaml:"max_size,omitempty" validate:"required_with=NodeGroupMinSize,numeric,omitempty"`
-	NodeGroupMinSize int               `yaml:"min_size,omitempty" validate:"required_with=NodeGroupMaxSize,numeric,omitempty"`
+	NodeGroupMaxSize int               `yaml:"max_size,omitempty" validate:"omitempty,required_with=NodeGroupMinSize,numeric"`
+	NodeGroupMinSize *int              `yaml:"min_size,omitempty" validate:"omitempty,required_with=NodeGroupMaxSize,numeric,gte=0"`
 	RootVolume       RootVolume        `yaml:"root_volume,omitempty"`
 	ExtraVolumes     []ExtraVolume     `yaml:"extra_volumes,omitempty" validate:"dive"`
 }
@@ -260,6 +274,7 @@ type HelmRepositoryCredentials struct {
 type HelmRepository struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
 	URL          string `yaml:"url" validate:"required"`
+	Type         string `yaml:"type,omitempty" validate:"oneof='ecr' 'acr' 'gar' 'generic'"`
 }
 
 type AWS struct {
@@ -342,6 +357,7 @@ type SCParameters struct {
 
 func (s ClusterConfigSpec) Init() ClusterConfigSpec {
 	s.Private = false
+	s.WorkersConfig.MaxUnhealthy = ToPtr[int](100)
 	return s
 }
 
@@ -357,7 +373,7 @@ func (s KeosSpec) Init() KeosSpec {
 	s.DeployAutoscaler = true
 
 	// EKS
-	s.Security.AWS.CreateIAM = true
+	s.Security.AWS.CreateIAM = false
 	s.ControlPlane.AWS.AssociateOIDCProvider = true
 	s.ControlPlane.AWS.Logging.ApiServer = false
 	s.ControlPlane.AWS.Logging.Audit = false
@@ -366,7 +382,8 @@ func (s KeosSpec) Init() KeosSpec {
 	s.ControlPlane.AWS.Logging.Scheduler = false
 
 	// Helm
-	s.HelmRepository.AuthRequired = true
+	s.HelmRepository.AuthRequired = false
+	s.HelmRepository.Type = "generic"
 
 	// Managed zones
 	s.Dns.ManageZone = true
@@ -445,11 +462,19 @@ func GetClusterDescriptor(descriptorPath string) (*KeosCluster, *ClusterConfig, 
 		return nil, nil, errors.New("Keoscluster's manifest has not been found.")
 	}
 
-	if findClusterConfig {
-		return &keosCluster, &clusterConfig, nil
+	if !findClusterConfig {
+		clusterConfig = ClusterConfig{}
+		clusterConfig.APIVersion = "installer.stratio.com/v1beta1"
+		clusterConfig.Kind = "ClusterConfig"
+		clusterConfig.Metadata.Name = keosCluster.Spec.InfraProvider + "-config"
+		clusterConfig.Metadata.Namespace = "cluster-" + keosCluster.Metadata.Name
+		clusterConfig.Spec = new(ClusterConfigSpec).Init()
+		if !keosCluster.Spec.ControlPlane.Managed {
+			clusterConfig.Spec.ControlplaneConfig.MaxUnhealthy = ToPtr[int](34)
+		}
 	}
 
-	return &keosCluster, nil, nil
+	return &keosCluster, &clusterConfig, nil
 }
 
 func DecryptFile(filePath string, vaultPassword string) (string, error) {
@@ -580,4 +605,9 @@ func requireCheckFieldValue(fl validator.FieldLevel, param string, value string,
 
 	return false
 
+}
+
+// Ptr returns a pointer to the provided value.
+func ToPtr[T any](v T) *T {
+	return &v
 }
