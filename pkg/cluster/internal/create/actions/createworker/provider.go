@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -266,6 +267,7 @@ func (p *Provider) getAllowCAPXEgressIMDSGNetPol() (string, error) {
     allowEgressIMDSgnpContent = string(allowEgressIMDSgnpContentBytes)
   }
   return allowEgressIMDSgnpContent, nil
+}
 
 func getcapxPDB(commonsPDBLocalPath string) (string, error) {
 	commonsPDBFile, err := commonsPDBFile.Open(commonsPDBLocalPath)
