@@ -211,7 +211,7 @@ func (i *Infra) internalNginx(p ProviderParams, networks commons.Networks) (bool
 	return i.builder.internalNginx(p, networks)
 }
 
-func (i *Infra) getOverrideVars(p ProviderParams, networks commons.Networks,clusterConfigSpec clusterConfigSpec) (map[string][]byte, error) {
+func (i *Infra) getOverrideVars(p ProviderParams, networks commons.Networks,clusterConfigSpec commons.ClusterConfigSpec) (map[string][]byte, error) {
 	return i.builder.getOverrideVars(p, networks, clusterConfigSpec)
 }
 
