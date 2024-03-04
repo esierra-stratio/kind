@@ -407,6 +407,9 @@ func validateAKSNodes(wn commons.WorkerNodes) error {
 		isBalanced := n.ZoneDistribution == "balanced" || (n.ZoneDistribution == "" && n.AZ == "")
 		isSystemPool := len(n.Taints) == 0 && !n.Spot && (n.NodeGroupMinSize == nil || *n.NodeGroupMinSize != 0)
 		if isSystemPool {
+			if *n.Quantity == 0 {
+				return errors.New("spec.worker_nodes." + n.Name + ": as a system node group must have quantity greater than 0")
+			}
 			numberOfSystemPool++
 		}
 		if isSystemPool && n.NodeGroupMinSize != nil {
