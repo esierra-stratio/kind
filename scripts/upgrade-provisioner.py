@@ -200,10 +200,23 @@ def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dr
                     " --bootstrap capi-kubeadm-bootstrap-system/kubeadm:" + CAPI +
                     " --control-plane capi-kubeadm-control-plane-system/kubeadm:" + CAPI +
                     " --infrastructure " + namespace + "/" + provider + ":" + version)
-        execute_command(command, dry_run)
-        if provider == "azure":
-            command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
-            execute_command(command, dry_run, False)
+        if dry_run:
+            print("DRY-RUN")
+        else:
+            status, output = subprocess.getstatusoutput(command)
+            if status == 0:
+                print("OK")
+            else:
+                if "timeout" in output:
+                    os.sleep(60)
+                    execute_command(command, dry_run)
+                else:
+                    print("FAILED")
+                    print("[ERROR] " + output)
+                    sys.exit(1)
+            if provider == "azure":
+                command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
+                execute_command(command, dry_run, False)
 
     deployments = [
         {"name": namespace.split("-")[0] + "-controller-manager", "namespace": namespace},
@@ -286,11 +299,14 @@ def cluster_operator(kubeconfig, helm_repo, provider, credentials, cluster_name,
 
         # Upgrade cluster-operator
         print("[INFO] Upgrading Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
-        command = (helm + " -n kube-system upgrade cluster-operator cluster-operator" +
-            " --wait --version " + CLUSTER_OPERATOR + " --values ./clusteroperator.values" +
+        command = (helm + " -n kube-system upgrade cluster-operator")
+        if "oci" in helm_repo["url"]:
+            command += " " + helm_repo["url"] + "/cluster-operator"
+        else:
+            command += " cluster-operator --repo " + helm_repo["url"]
+        command += (" --wait --version " + CLUSTER_OPERATOR + " --values ./clusteroperator.values" +
             " --set provider=" + provider +
-            " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR +
-            " --repo " + helm_repo["url"])
+            " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR)
         if "user" in helm_repo:
             command += " --username=" + helm_repo["user"]
             command += " --password=" + helm_repo["pass"]
@@ -334,27 +350,18 @@ def cluster_operator(kubeconfig, helm_repo, provider, credentials, cluster_name,
 
 def execute_command(command, dry_run, result = True):
     output = ""
-    retry_conditions = ["dial tcp: lookup", "timed out waiting"]
     if dry_run:
         if result:
             print("DRY-RUN")
     else:
-        for _ in range(3):
-            status, output = subprocess.getstatusoutput(command)
-            if status == 0:
-                if result:
-                    print("OK")
-                    break
-            else:
-                retry = False
-                for condition in retry_conditions:
-                    if condition in output:
-                        retry = True
-                if not retry:
-                    print("FAILED")
-                    print("[ERROR] " + output)
-                    sys.exit(1)
-                os.sleep(30)
+        status, output = subprocess.getstatusoutput(command)
+        if status == 0:
+            if result:
+                print("OK")
+        else:
+            print("FAILED")
+            print("[ERROR] " + output)
+            sys.exit(1)
     return output
 
 def get_deploy_version(deploy, namespace, container):
