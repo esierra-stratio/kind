@@ -186,6 +186,66 @@ def install_lb_controller(cluster_name, account_id, dry_run):
                 " --repo https://aws.github.io/eks-charts")
     execute_command(command, dry_run)
 
+def enable_minsize_zero(cluster_name, provider, dry_run):
+    print("[INFO] Enabled min_size 0 value:", end=" ", flush=True)
+    rbacRoleCA = {
+        "apiVersion": "rbac.authorization.k8s.io/v1",
+        "kind": "Role",
+        "metadata": {
+            "labels": {
+                "app.kubernetes.io/name": "clusterapi-cluster-autoscaler"
+            },
+            "name": "cluster-autoscaler-clusterapi-cluster-autoscaler",
+            "namespace": "cluster-" + cluster_name
+        },
+        "rules": [
+            {
+                "apiGroups": [
+                    "infrastructure.cluster.x-k8s.io"
+                ],
+                "resources": [
+                    provider + "machinetemplates"
+                ],
+                "verbs": [
+                    "get",
+                    "list",
+                    "watch"
+                ]
+            }
+        ]
+    }
+    rbacRoleBindingCA = {
+        "apiVersion": "rbac.authorization.k8s.io/v1",
+        "kind": "RoleBinding",
+        "metadata": {
+            "labels": {
+                "app.kubernetes.io/name": "clusterapi-cluster-autoscaler"
+            },
+            "name": "cluster-autoscaler-clusterapi-cluster-autoscaler",
+            "namespace": "cluster-" + cluster_name
+        },
+        "roleRef": {
+            "apiGroup": "rbac.authorization.k8s.io",
+            "kind": "Role",
+            "name": "cluster-autoscaler-clusterapi-cluster-autoscaler"
+        },
+        "subjects": [
+            {
+                "kind": "ServiceAccount",
+                "name": "cluster-autoscaler-clusterapi-cluster-autoscaler",
+                "namespace": "kube-system"
+            }
+        ]
+    }
+    rbacCA_resources = [rbacRoleCA, rbacRoleBindingCA]
+
+    for rbacCA in rbacCA_resources:
+        with open('./rbacCA.yaml', 'w') as rbacCA_file:
+            yaml.dump(rbacCA, rbacCA_file, default_flow_style=False)
+        command = "kubectl apply -f rbacCA.yaml"
+        execute_command(command, dry_run)
+        os.remove('./rbacCA.yaml')
+
 def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dry_run):
     print("[INFO] Upgrading " + namespace.split("-")[0] + " to " + version + " and capi to " + CAPI + ":", end =" ", flush=True)
     # Check if capx & capi are already upgraded
@@ -200,10 +260,23 @@ def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dr
                     " --bootstrap capi-kubeadm-bootstrap-system/kubeadm:" + CAPI +
                     " --control-plane capi-kubeadm-control-plane-system/kubeadm:" + CAPI +
                     " --infrastructure " + namespace + "/" + provider + ":" + version)
-        execute_command(command, dry_run)
-        if provider == "azure":
-            command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
-            execute_command(command, dry_run, False)
+        if dry_run:
+            print("DRY-RUN")
+        else:
+            status, output = subprocess.getstatusoutput(command)
+            if status == 0:
+                print("OK")
+            else:
+                if "timeout" in output:
+                    os.sleep(60)
+                    execute_command(command, dry_run)
+                else:
+                    print("FAILED")
+                    print("[ERROR] " + output)
+                    sys.exit(1)
+            if provider == "azure":
+                command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
+                execute_command(command, dry_run, False)
 
     deployments = [
         {"name": namespace.split("-")[0] + "-controller-manager", "namespace": namespace},
@@ -286,14 +359,11 @@ def cluster_operator(kubeconfig, helm_repo, provider, credentials, cluster_name,
 
         # Upgrade cluster-operator
         print("[INFO] Upgrading Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
-        command = (helm + " -n kube-system upgrade cluster-operator")
-        if "oci" in helm_repo["url"]:
-            command += " " + helm_repo["url"] + "/cluster-operator"
-        else:
-            command += " cluster-operator --repo " + helm_repo["url"]
-        command += (" --wait --version " + CLUSTER_OPERATOR + " --values ./clusteroperator.values" +
+        command = (helm + " -n kube-system upgrade cluster-operator cluster-operator" +
+            " --wait --version " + CLUSTER_OPERATOR + " --values ./clusteroperator.values" +
             " --set provider=" + provider +
-            " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR)
+            " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR +
+            " --repo " + helm_repo["url"])
         if "user" in helm_repo:
             command += " --username=" + helm_repo["user"]
             command += " --password=" + helm_repo["pass"]
@@ -337,27 +407,18 @@ def cluster_operator(kubeconfig, helm_repo, provider, credentials, cluster_name,
 
 def execute_command(command, dry_run, result = True):
     output = ""
-    retry_conditions = ["dial tcp: lookup", "timed out waiting"]
     if dry_run:
         if result:
             print("DRY-RUN")
     else:
-        for _ in range(3):
-            status, output = subprocess.getstatusoutput(command)
-            if status == 0:
-                if result:
-                    print("OK")
-                    break
-            else:
-                retry = False
-                for condition in retry_conditions:
-                    if condition in output:
-                        retry = True
-                if not retry:
-                    print("FAILED")
-                    print("[ERROR] " + output)
-                    sys.exit(1)
-                os.sleep(30)
+        status, output = subprocess.getstatusoutput(command)
+        if status == 0:
+            if result:
+                print("OK")
+        else:
+            print("FAILED")
+            print("[ERROR] " + output)
+            sys.exit(1)
     return output
 
 def get_deploy_version(deploy, namespace, container):
@@ -550,6 +611,12 @@ if __name__ == '__main__':
         else:
             print("[WARN] AWS LoadBalancer Controller is only supported for EKS managed clusters")
             sys.exit(0)
+    if not config["yes"]:
+        request_confirmation()
+
+    # Enable min_size = 0
+    if not (provider == "azure" and managed):
+        enable_minsize_zero(cluster_name, provider, config["dry_run"])
     if not config["yes"]:
         request_confirmation()
 
