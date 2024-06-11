@@ -270,6 +270,7 @@ Los _logs_ del _cluster-autoscaler_ se pueden ver desde su _Deployment_:
 kubectl -n kube-system logs -f -l app.kubernetes.io/name=clusterapi-cluster-autoscaler
 ----
 
+_TO BE TRANSLATED_
 === Actualización de versión de _Stratio Cloud Provisioner_ a 0.5
 ==== Antes de empezar
 
@@ -341,6 +342,58 @@ Ejemplo básico:
 [source,bash]
 ----
 python3 upgrade-provisioner.py -p <vault_pass>
+----
+
+Ejemplo de salida de la ejecución:
+
+[source,bash]
+----
+[INFO] Using kubeconfig: /tmp/kubeconfig
+[INFO] Cluster name: esierra-dev-vms
+Press ENTER to continue upgrading the cluster or any other key to abort: 
+[INFO] Verifying upgrade process
+[INFO] Backing up files into directory ./backup/upgrade/20240611-132257
+[INFO] Backing up CAPX files: OK
+[INFO] Backing up capsule files: OK
+[INFO] Preparing capsule-mutating-webhook-configuration for the upgrade process: OK
+[INFO] Preparing capsule-validating-webhook-configuration for the upgrade process: OK
+[INFO] Applying new ClusterConfig CRD: OK
+[INFO] Upgrading Cluster Operator 0.3.0: OK
+[INFO] Restoring capsule-mutating-webhook-configuration: OK
+[INFO] Restoring capsule-validating-webhook-configuration: OK
+Please provide the Kubernetes version to which you want to upgrade: 1.27.11
+Are you sure you want to upgrade to version 1.27.11? (yes/no): y
+[INFO] Initiating upgrade to kubernetes to version 1.27.11
+[INFO] Scaling down cluster autoscaler replicas: OK
+[INFO] Applying temporal allow control plane GlobalNetworkPolicy: OK
+Please provide the image ID associated with the Kubernetes version: 1.27.11 for control-plane: ami-09d1a38098ccd9d16
+Are you sure you want to use node image: ami-09d1a38098ccd9d16 for control-plane? (yes/no): y 
+Please provide the image ID associated with the Kubernetes version: 1.27.11 for worker node: worker1: ami-09d1a38098ccd9d16
+Are you sure you want to use node image: ami-09d1a38098ccd9d16 for worker node: worker1? (yes/no): y
+Please provide the image ID associated with the Kubernetes version: 1.27.11 for worker node: minmax0: ami-09d1a38098ccd9d16
+Are you sure you want to use node image: ami-09d1a38098ccd9d16 for worker node: minmax0? (yes/no): y
+[INFO] node_image is not defined in worker node: noimage
+[INFO] Waiting for the Kubernetes version upgrade - control plane: OK
+[INFO] Waiting for the Kubernetes version upgrade - worker nodes: OK
+[INFO] Restoring allow control plane GlobalNetworkPolicy: OK
+[INFO] Scaling up cluster autoscaler replicas: OK
+Please provide the Kubernetes version to which you want to upgrade: 1.28.7
+Are you sure you want to upgrade to version 1.28.7? (yes/no): y
+[INFO] Initiating upgrade to kubernetes to version 1.28.7
+[INFO] Scaling down cluster autoscaler replicas: OK
+[INFO] Applying temporal allow control plane GlobalNetworkPolicy: OK
+Please provide the image ID associated with the Kubernetes version: 1.28.7 for control-plane: ami-0a226d9d637560c4b
+Are you sure you want to use node image: ami-0a226d9d637560c4b for control-plane? (yes/no): yes
+Please provide the image ID associated with the Kubernetes version: 1.28.7 for worker node: worker1: ami-0a226d9d637560c4b
+Are you sure you want to use node image: ami-0a226d9d637560c4b for worker node: worker1? (yes/no): yes
+Please provide the image ID associated with the Kubernetes version: 1.28.7 for worker node: minmax0: ami-0a226d9d637560c4b
+Are you sure you want to use node image: ami-0a226d9d637560c4b for worker node: minmax0? (yes/no): yes
+[INFO] node_image is not defined in worker node: noimage
+[INFO] Waiting for the Kubernetes version upgrade - control plane: OK
+[INFO] Waiting for the Kubernetes version upgrade - worker nodes: OK
+[INFO] Restoring allow control plane GlobalNetworkPolicy: OK
+[INFO] Scaling up cluster autoscaler replicas: OK
+[INFO] Upgrade process finished successfully in 117 minutes and 14.68 seconds
 ----
 
 En caso de fallo, al tratarse de un script indempotente, se podrá ejecutar tantas veces como se desea y se obtenga el mensaje de finalización de actualización satisfactoria.
