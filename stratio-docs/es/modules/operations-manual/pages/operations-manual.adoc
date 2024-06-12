@@ -272,6 +272,7 @@ kubectl -n kube-system logs -f -l app.kubernetes.io/name=clusterapi-cluster-auto
 
 _TO BE TRANSLATED_
 === Actualización de versión de _Stratio Cloud Provisioner_ a 0.5
+
 ==== Antes de empezar
 
 A diferencia de otras versiones del script de _upgrade_, todas las etapas hasta completar la actualización se hace de manera automatizada y sin la interacción humana, excepto para confirmaciones y solucitudes de información de versiones. Durante la actualización, es importante tener en cuenta que se realizará un cambio consecutivo de la versión de kubernetes, siguiendo el procedimiento automatizado que se detalla a continuación:
@@ -398,10 +399,10 @@ Are you sure you want to use node image: ami-0a226d9d637560c4b for worker node: 
 
 En caso de fallo, al tratarse de un script indempotente, se podrá ejecutar tantas veces como se desea y se obtenga el mensaje de finalización de actualización satisfactoria.
 
-
 ==== Verificación post-actualización
 
 ===== etcd
+
 Una forma de asegurar que el etcd está correcto después de actualizar un _control-plane_ no gestionado es abrir una terminal en cualquier _pod_ de etcd, ver el estado del _cluster_ y comparar las IP de los miembros registrados con las de los nodos del _control-plane_.
 
 [source,bash]
@@ -414,8 +415,11 @@ e endpoint status -w table --cluster
 e member list
 e member remove <member-id>
 ----
+
 ===== cluster-autoscaler
+
 Se ha de comprobar que el _deployment_ de cluster-autoscaler está configurado con su número original de réplicas, esto es, igual a 2.
+
 [source,bash]
 ----
 kubectl get deploy cluster-autoscaler-clusterapi-cluster-autoscaler -n kube-system -ojsonpath='{.status.replicas}'
