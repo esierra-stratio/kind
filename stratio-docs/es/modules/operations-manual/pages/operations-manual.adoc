@@ -270,8 +270,6 @@ Los _logs_ del _cluster-autoscaler_ se pueden ver desde su _Deployment_:
 kubectl -n kube-system logs -f -l app.kubernetes.io/name=clusterapi-cluster-autoscaler
 ----
 
-_TO BE TRANSLATED_
-
 === Actualización de versión de _Stratio Cloud Provisioner_ a 0.5
 
 ==== Antes de empezar
