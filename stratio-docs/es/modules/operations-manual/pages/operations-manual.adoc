@@ -271,6 +271,7 @@ kubectl -n kube-system logs -f -l app.kubernetes.io/name=clusterapi-cluster-auto
 ----
 
 _TO BE TRANSLATED_
+
 === Actualización de versión de _Stratio Cloud Provisioner_ a 0.5
 
 ==== Antes de empezar
