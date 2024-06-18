@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.17.0-0.5.0 (upcoming)
+## 0.17.0-0.5.1 (upcoming)
 
 * [Core] Fix the version of cloud provisioner
 
