@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.0-0.5.1 (upcoming)
+
+* [Core] Fix the version of cloud provisioner
+
 ## 0.17.0-0.5.0 (2024-06-10)
 
 * [Core] Update runc golang module to fix GHSA-xr7r-f8xq-vfvv
