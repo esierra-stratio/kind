@@ -10,7 +10,7 @@ Para la generación de imágenes personalizadas en los diferentes proveedores _c
 
 == Obtención del _kubeconfig_
 
-Para comunicarse con el _API Server_ del _cluster_ creado es necesario el fichero _kubeconfig_, que se obtendrá de forma diferente según el proveedor _cloud_ utilizado y la gestión del _control-plane_ del _cluster_.
+Para comunicarse con el API Server del _cluster_ creado es necesario el fichero _kubeconfig_, que se obtendrá de forma diferente según el proveedor _cloud_ utilizado y la gestión del _control-plane_ del _cluster_.
 
 * Para EKS, se obtendrá de la forma indicada por AWS:
 +
@@ -220,7 +220,7 @@ image::autoescalado.png[]
 
 Para el autoescalado de nodos se utiliza _cluster-autoscaler_, quien detectará _pods_ pendientes de ejecutar por falta de recursos y escalará el grupo de nodos que considere según los filtros de los despliegues.
 
-Esta operación se realiza en el _API Server_, siendo los _controllers_ los encargados de crear las máquinas virtuales en el proveedor de _cloud_ y agregarlas al _cluster_ como nodos _worker_ de Kubernetes.
+Esta operación se realiza en el API Server, siendo los _controllers_ los encargados de crear las máquinas virtuales en el proveedor de _cloud_ y agregarlas al _cluster_ como nodos _worker_ de Kubernetes.
 
 Dado que el autoescalado está basado en el _cluster-autoscaler_, se añadirá el mínimo y máximo en el grupo de nodos en el objeto _KeosCluster_:
 
@@ -289,28 +289,25 @@ CAUTION: La actualización de la versión de Kubernetes de los nodos en los _clu
 ==== Prerrequisitos
 
 * Los siguientes binarios deberán estar disponibles en la máquina bastión:
-
-  - python3
-  - ansible-vault (pip)
-  - clusterctl
-  - helm
-  - kubectl
-  - jq
-  - aws (opcional)
-  - az (opcional)
-  - gcloud (opcional)
-
+** python3
+** ansible-vault (pip)
+** clusterctl
+** helm
+** kubectl
+** jq
+** aws (opcional)
+** az (opcional)
+** gcloud (opcional)
 * Se deberán asegurar los permisos necesarios en el directorio _backup_ de la máquina bastión para que el usuario que ejecuta el _script_ pueda escribir en él (se crea el directorio _./backup/upgrade/_).
-
 * Se debe asegurar la compatibilidad de la versión de Kubernetes para los diferentes proveedores, con especial atención para _clusters_ cuyos grupos de nodos no tienen definida una imagen _custom_:
-** EKS:
+** EKS
 +
 [source,bash]
 ----
 aws eks describe-addon-versions | jq -r ".addons[] | .addonVersions[] | .compatibilities[] | .clusterVersion" | sort -nr | uniq | head -4
 ----
 
-* AWS VMs:
+* AWS VMs
 +
 [source,bash]
 ----
@@ -332,7 +329,6 @@ az vm image list --publisher cncf-upstream --offer "capi" --sku ubuntu-2204  --a
 ----
 
 * GCP VMs. No aplica ya que es obligatorio especificar una imagen _custom_.
-
 * En entornos productivos y especialmente en proveedores no gestionados, deberá extremarse la precaución. En particular, antes de actualizar, se recomienda hacer un _backup_ de los objetos que gestionan la infraestructura y de los servicios considerados críticos.
 
 ==== Ejecución
