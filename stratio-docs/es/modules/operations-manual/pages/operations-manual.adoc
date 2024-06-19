@@ -303,26 +303,34 @@ CAUTION: La actualización de la versión de kubernetes de los nodos en los clú
 - Se deberán asegurar los permisos necesarios en el directorio _backup_ de la máquina bastión para que el usuario que ejecuta el _script_ pueda escribir en él (se crea el directorio _./backup/upgrade/_).
 
 - Asegurar la compatibilidad de la versión de kubernetes para los diferentes _providers_, con especial atención para clústeres cuyas grupos de nodos no tienen definida una imagen _custom_:
-  - EKS:
-    [source,bash]
-    ----
-    aws eks describe-addon-versions | jq -r ".addons[] | .addonVersions[] | .compatibilities[] | .clusterVersion" | sort -nr | uniq | head -4
-    ----
-  - AWS VMs:
-    [source,bash]
-    ----
-    aws ec2 describe-images --filters "Name=name,Values=capa-ami-ubuntu-18.04-*" --query 'Images[*].{ID:ImageId,Name:Name}' --output table
-    ----
-  - AKS
-    [source,bash]
-    ----
-    az aks get-versions --location <region> --output table
-    ----
-  - Azure VMs
-    ----
-    az vm image list --publisher cncf-upstream --offer "capi" --sku ubuntu-2204  --all -o table
-    ----
-  - GCP VMs. No aplica ya que es obligatorio especificar una imagen _custom_.
+** EKS:
++
+[source,bash]
+----
+aws eks describe-addon-versions | jq -r ".addons[] | .addonVersions[] | .compatibilities[] | .clusterVersion" | sort -nr | uniq | head -4
+----
+
+* AWS VMs:
++
+[source,bash]
+----
+aws ec2 describe-images --filters "Name=name,Values=capa-ami-ubuntu-18.04-*" --query 'Images[*].{ID:ImageId,Name:Name}' --output table
+----
+
+* AKS
++
+[source,bash]
+----
+az aks get-versions --location <region> --output table
+----
+* Azure VMs
++
+[source,bash]
+----
+az vm image list --publisher cncf-upstream --offer "capi" --sku ubuntu-2204  --all -o table
+----
+
+* GCP VMs. No aplica ya que es obligatorio especificar una imagen _custom_.
 
 * En entornos productivos y especialmente en proveedores no gestionados, deberá extremarse la precaución. En particular, antes de actualizar, se recomienda hacer un _backup_ de los objetos que gestionan la infraestructura y de los servicios considerados críticos.
 
