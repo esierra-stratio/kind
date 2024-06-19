@@ -324,7 +324,7 @@ CAUTION: La actualización de la versión de kubernetes de los nodos en los clú
     ----
   - GCP VMs. No aplica ya que es obligatorio especificar una imagen _custom_.
 
-- En entornos productivos y especialmente en _providers_ no gestionados, deberá extremarse la precaución. En particular, antes de actualizar, se recomienda hacer un backup de los objetos que gestionan la infraestructura y de los servicios considerados críticos.
+* En entornos productivos y especialmente en proveedores no gestionados, deberá extremarse la precaución. En particular, antes de actualizar, se recomienda hacer un _backup_ de los objetos que gestionan la infraestructura y de los servicios considerados críticos.
 
 ==== Ejecución
 
