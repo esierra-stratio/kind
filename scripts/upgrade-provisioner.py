@@ -724,12 +724,20 @@ if __name__ == '__main__':
         cluster_file = list(yaml.safe_load_all(file))
     file.close()
 
+    # Initialize variables
+    keos_cluster = None
+    cluster_config = None
+
     # Assign documents to variables based on their order
     for doc in cluster_file:
         if doc['kind'] == 'KeosCluster':
             keos_cluster = doc
         elif doc['kind'] == 'ClusterConfig':
             cluster_config = doc
+
+    if not keos_cluster:
+        print("[ERROR] KeosCluster cannot be empty")
+        sys.exit(1)
 
     # Set cluster_name
     if "metadata" in keos_cluster:
