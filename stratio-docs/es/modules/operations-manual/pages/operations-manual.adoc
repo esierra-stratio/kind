@@ -277,7 +277,7 @@ kubectl -n kube-system logs -f -l app.kubernetes.io/name=clusterapi-cluster-auto
 A diferencia de otras versiones del _script_ de _upgrade_, todas las etapas hasta completar la actualización se hacen de manera automatizada y sin interacción humana excepto para confirmaciones y solicitudes de información de versiones. Durante la actualización, es importante tener en cuenta que se realizará un cambio consecutivo de la versión de Kubernetes, siguiendo el procedimiento automatizado que se detalla a continuación:
 
 - Realizar un proceso de _backup_ de los objetos que administran la infraestructura.
-- Actualizar y/o añadir servicios dentro del clúster de kubernetes.
+- Actualizar y/o añadir servicios dentro del _cluster_ de Kubernetes.
 - Actualizar la versión de kubernetes de 1.26.X a 1.27.X.
 - Actualizar la versión de kubernetes de 1.27.X a 1.28.X.
 - Restaurar, si es necesario, los servicios del proceso de _backup_ realizado previamente.
