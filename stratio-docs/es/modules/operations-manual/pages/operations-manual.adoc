@@ -302,7 +302,7 @@ CAUTION: La actualización de la versión de Kubernetes de los nodos en los _clu
 
 - Se deberán asegurar los permisos necesarios en el directorio _backup_ de la máquina bastión para que el usuario que ejecuta el _script_ pueda escribir en él (se crea el directorio _./backup/upgrade/_).
 
-- Asegurar la compatibilidad de la versión de kubernetes para los diferentes _providers_, con especial atención para clústeres cuyas grupos de nodos no tienen definida una imagen _custom_:
+* Se debe asegurar la compatibilidad de la versión de Kubernetes para los diferentes proveedores, con especial atención para _clusters_ cuyos grupos de nodos no tienen definida una imagen _custom_:
 ** EKS:
 +
 [source,bash]
