@@ -279,7 +279,7 @@ A diferencia de otras versiones del _script_ de _upgrade_, todas las etapas hast
 - Realizar un proceso de _backup_ de los objetos que administran la infraestructura.
 - Actualizar y/o añadir servicios dentro del _cluster_ de Kubernetes.
 - Actualizar la versión de Kubernetes de 1.26.X a 1.27.X.
-- Actualizar la versión de kubernetes de 1.27.X a 1.28.X.
+- Actualizar la versión de Kubernetes de 1.27.X a 1.28.X.
 - Restaurar, si es necesario, los servicios del proceso de _backup_ realizado previamente.
 
 En cuanto a la actualización de las versiones de Kubernetes, esta se realizará en dos etapas dentro del mismo proceso atómico: primero, el _control-plane_, y una vez que esté en la nueva versión, los nodos _worker_, iterando por cada grupo de nodos y actualizándolos uno a uno de manera secuencial.
