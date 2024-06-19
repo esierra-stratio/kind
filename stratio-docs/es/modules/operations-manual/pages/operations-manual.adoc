@@ -338,7 +338,7 @@ az vm image list --publisher cncf-upstream --offer "capi" --sku ubuntu-2204  --a
 
 Durante la ejecución del _script_ se requerirá al usuario confirmar la continuación del proceso en diversas etapas y proporcionar información relevante, como la versión de Kubernetes que se desea actualizar.
 
-Se debe ejecutar el _script_ _upgrade-provisioner++_++.py_ cuya ayuda se puede consultar con el siguiente comando:
+Se debe ejecutar el _script_ `upgrade-provisioner_.py`, cuya ayuda se puede consultar con el siguiente comando:
 
 [source,bash]
 ----
