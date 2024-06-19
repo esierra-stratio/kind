@@ -274,7 +274,7 @@ kubectl -n kube-system logs -f -l app.kubernetes.io/name=clusterapi-cluster-auto
 
 ==== Antes de empezar
 
-A diferencia de otras versiones del script de _upgrade_, todas las etapas hasta completar la actualización se hace de manera automatizada y sin la interacción humana, excepto para confirmaciones y solucitudes de información de versiones. Durante la actualización, es importante tener en cuenta que se realizará un cambio consecutivo de la versión de kubernetes, siguiendo el procedimiento automatizado que se detalla a continuación:
+A diferencia de otras versiones del _script_ de _upgrade_, todas las etapas hasta completar la actualización se hacen de manera automatizada y sin interacción humana excepto para confirmaciones y solicitudes de información de versiones. Durante la actualización, es importante tener en cuenta que se realizará un cambio consecutivo de la versión de Kubernetes, siguiendo el procedimiento automatizado que se detalla a continuación:
 
 - Realizar un proceso de _backup_ de los objetos que administran la infraestructura.
 - Actualizar y/o añadir servicios dentro del clúster de kubernetes.
