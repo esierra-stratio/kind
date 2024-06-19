@@ -396,7 +396,7 @@ Are you sure you want to use node image: ami-0a226d9d637560c4b for worker node: 
 [INFO] Upgrade process finished successfully in 117 minutes and 14.68 seconds
 ----
 
-En caso de fallo, al tratarse de un script indempotente, se podrá ejecutar tantas veces como se desea y se obtenga el mensaje de finalización de actualización satisfactoria.
+En caso de fallo, al tratarse de un _script_ indempotente, se podrá ejecutar tantas veces como se desea y se obtenga el mensaje de finalización de actualización satisfactoria.
 
 ==== Verificación post-actualización
 
