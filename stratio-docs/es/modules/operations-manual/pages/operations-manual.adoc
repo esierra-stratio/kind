@@ -323,6 +323,7 @@ aws ec2 describe-images --filters "Name=name,Values=capa-ami-ubuntu-18.04-*" --q
 ----
 az aks get-versions --location <region> --output table
 ----
+
 * Azure VMs
 +
 [source,bash]
