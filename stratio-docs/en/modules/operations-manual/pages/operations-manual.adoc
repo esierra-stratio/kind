@@ -412,9 +412,11 @@ One way to ensure that the etcd is correct after upgrading an unmanaged _control
 [source,bash]
 ----
 kubectl -n kube-system exec -ti etcd-<control-plane-node> sh
+
 alias e="etcdctl --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --cacert=/etc/kubernetes/pki/etcd/ca.crt "
 e endpoint status
-	@@ -387.6 +424.15 @@ e member list
+e endpoint status -w table --cluster
+e member list
 e member remove <member-id>
 ----
 
