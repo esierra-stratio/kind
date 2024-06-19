@@ -288,7 +288,7 @@ CAUTION: La actualización de la versión de Kubernetes de los nodos en los _clu
 
 ==== Prerrequisitos
 
-- Los siguientes binarios deberán estar disponibles en la máquina bastión:
+* Los siguientes binarios deberán estar disponibles en la máquina bastión:
 
   - python3
   - ansible-vault (pip)
