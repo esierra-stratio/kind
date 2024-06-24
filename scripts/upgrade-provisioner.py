@@ -10,7 +10,7 @@
 #   - Azure VMs & AKS                                        #
 ##############################################################
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 import argparse
 import os
@@ -26,8 +26,8 @@ from datetime import datetime
 from ansible_vault import Vault
 from jinja2 import Template
 
-CLOUD_PROVISIONER = "0.17.0-0.5.0"
-CLUSTER_OPERATOR = "0.3.0" 
+CLOUD_PROVISIONER = "0.17.0-0.5.1"
+CLUSTER_OPERATOR = "0.3.1" 
 CLUSTER_OPERATOR_UPGRADE_SUPPORT = "0.2.0"
 CLOUD_PROVISIONER_LAST_PREVIOUS_RELEASE = "0.17.0-0.4.0"
 
