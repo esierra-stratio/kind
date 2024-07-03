@@ -39,9 +39,6 @@ func validateCommon(spec commons.KeosSpec, clusterConfigSpec commons.ClusterConf
 	if err = validateK8SVersion(spec.K8SVersion); err != nil {
 		return err
 	}
-	if err = validateKeosVersion(spec.Keos.Version); err != nil {
-		return err
-	}
 	if err = validateWorkers(spec.WorkerNodes); err != nil {
 		return err
 	}
@@ -77,16 +74,6 @@ func validateK8SVersion(v string) error {
 	k8sVersion := strings.Join(K8sVersionMM[:2], ".")
 	if !slices.Contains(k8sVersionSupported, strings.ReplaceAll(k8sVersion, "v", "")) {
 		return errors.New("spec: Invalid value: \"k8s_version\": kubernetes versions supported: " + fmt.Sprint(strings.Join(k8sVersionSupported, ", ")))
-	}
-	return nil
-}
-
-func validateKeosVersion(v string) error {
-	if len(v) > 0 {
-		patch := "^(\\d{1,2}.){2}\\d{1,2}$"
-		if !validateVersion(v, patch) {
-			return errors.New("spec: Invalid value: \"spec.keos.version\": regex used for validation is " + patch)
-		}
 	}
 	return nil
 }
