@@ -19,8 +19,6 @@ package createworker
 import (
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -58,7 +56,6 @@ type KEOSDescriptor struct {
 			Ipip                 bool   `yaml:"ipip,omitempty"`
 			VXLan                bool   `yaml:"vxlan,omitempty"`
 			Pool                 string `yaml:"pool,omitempty"`
-			DeployTigeraOperator *bool  `yaml:"deploy_tigera_operator,omitempty"`
 		} `yaml:"calico,omitempty"`
 		ClusterID string `yaml:"cluster_id"`
 		Dns       struct {
@@ -147,24 +144,6 @@ func createKEOSDescriptor(keosCluster commons.KeosCluster, storageClass string) 
 			keosDescriptor.Keos.Calico.Pool = keosCluster.Spec.Networks.PodsCidrBlock
 		} else {
 			keosDescriptor.Keos.Calico.Pool = "192.168.0.0/16"
-		}
-	}
-
-	// If keos version is less than 1.1, undefined or invalid, deploy_tigera_operator is set to false
-	// otherwise if keos_version is 1.1 or greater, deploy_tigera_operator is removed from the keos.yaml
-	deployTigeraOperator := false
-	keosDescriptor.Keos.Calico.DeployTigeraOperator = &deployTigeraOperator
-	if keosCluster.Spec.Keos.Version != "" {
-		var keosVersion float64
-		version := strings.TrimPrefix(keosCluster.Spec.Keos.Version, "v")
-		splitVersion := strings.Split(version, ".")
-		if len(splitVersion) >= 2 {
-			keosVersion, err = strconv.ParseFloat(splitVersion[0]+"."+splitVersion[1], 64)
-			if err == nil {
-				if keosVersion >= 1.1 {
-					keosDescriptor.Keos.Calico.DeployTigeraOperator = nil
-				}
-			}
 		}
 	}
 

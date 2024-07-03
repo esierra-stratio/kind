@@ -82,9 +82,11 @@ func validateK8SVersion(v string) error {
 }
 
 func validateKeosVersion(v string) error {
-	patch := "^(\\d{1,2}.){2}\\d{1,2}$"
-	if !validateVersion(v, patch) {
-		return errors.New("spec: Invalid value: \"spec.keos.version\": regex used for validation is " + patch)
+	if len(v) > 0 {
+		patch := "^(\\d{1,2}.){2}\\d{1,2}$"
+		if !validateVersion(v, patch) {
+			return errors.New("spec: Invalid value: \"spec.keos.version\": regex used for validation is " + patch)
+		}
 	}
 	return nil
 }
