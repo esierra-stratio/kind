@@ -39,6 +39,9 @@ func validateCommon(spec commons.KeosSpec, clusterConfigSpec commons.ClusterConf
 	if err = validateK8SVersion(spec.K8SVersion); err != nil {
 		return err
 	}
+	if err = validateKeosVersion(spec.Keos.Version); err != nil {
+		return err
+	}
 	if err = validateWorkers(spec.WorkerNodes); err != nil {
 		return err
 	}
@@ -60,15 +63,28 @@ func validateClusterConfig(spec commons.KeosSpec, clusterConfigSpec commons.Clus
 	return nil
 }
 
+func validateVersion(v string, patch string) bool {
+	var isVersion = regexp.MustCompile(patch).MatchString
+	return isVersion(v)
+}
+
 func validateK8SVersion(v string) error {
-	var isVersion = regexp.MustCompile(`^v\d.\d{2}.\d{1,2}(-gke.\d{3,4})?$`).MatchString
-	if !isVersion(v) {
-		return errors.New("spec: Invalid value: \"k8s_version\": regex used for validation is '^v\\d.\\d{2}.\\d{1,2}(-gke.\\d{3,4})?$'")
+	patch := "^v\\d.\\d{2}.\\d{1,2}(-gke.\\d{3,4})?$"
+	if !validateVersion(v, patch) {
+		return errors.New("spec: Invalid value: \"k8s_version\": regex used for validation is " + patch)
 	}
 	K8sVersionMM := strings.Split(v, ".")
 	k8sVersion := strings.Join(K8sVersionMM[:2], ".")
 	if !slices.Contains(k8sVersionSupported, strings.ReplaceAll(k8sVersion, "v", "")) {
 		return errors.New("spec: Invalid value: \"k8s_version\": kubernetes versions supported: " + fmt.Sprint(strings.Join(k8sVersionSupported, ", ")))
+	}
+	return nil
+}
+
+func validateKeosVersion(v string) error {
+	patch := "^(\\d{1,2}.){2}\\d{1,2}$"
+	if !validateVersion(v, patch) {
+		return errors.New("spec: Invalid value: \"spec.keos.version\": regex used for validation is " + patch)
 	}
 	return nil
 }

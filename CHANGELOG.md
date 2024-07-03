@@ -4,6 +4,8 @@
 
 * [Core] Improve command execution retries.
 * [Core] Fix panic when keos_version is not defined
+* [Core] Fix min size 0 in the upgrade script
+* [Core] Validate keos version
 
 ## 0.17.0-0.4.0 (2024-03-06)
 
