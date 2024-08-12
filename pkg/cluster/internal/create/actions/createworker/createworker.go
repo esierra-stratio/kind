@@ -631,7 +631,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 		}
 
-				if awsEKSEnabled && a.clusterConfig.Spec.EKSLBController {
+		if awsEKSEnabled && a.clusterConfig.Spec.EKSLBController {
 			ctx.Status.Start("Installing AWS LB controller in workload cluster ⚖️")
 			defer ctx.Status.End(false)
 			err = installLBController(n, kubeconfigPath, privateParams, providerParams)
