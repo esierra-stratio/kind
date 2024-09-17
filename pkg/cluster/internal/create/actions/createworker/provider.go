@@ -890,10 +890,7 @@ func configureFlux(n nodes.Node, k string, privateParams PrivateParams, helmRepo
 	return nil
 }
 
-func reconcileCharts(n nodes.Node, k string, privateParams PrivateParams, keosClusterSpec commons.KeosSpec, chartsList map[string]commons.ChartEntry, awsEKSEnabled bool) error {
-	var c string
-	var err error
-
+func reconcileCharts(n nodes.Node, k string, privateParams PrivateParams, keosClusterSpec commons.KeosSpec, chartsList map[string]commons.ChartEntry) error {
 	// Iterate through charts and create Helm repositories and releases
 	for name, entry := range chartsList {
 		// Create fluxHelmReleaseParams for the current entry
@@ -913,17 +910,7 @@ func reconcileCharts(n nodes.Node, k string, privateParams PrivateParams, keosCl
 			fluxHelmReleaseParams.ChartNamespace = entry.Namespace
 			fluxHelmReleaseParams.ChartVersion = entry.Version
 			// tigera-operator-helm-values.yaml is required to install Calico as Network Policy engine
-			if name == "tigera-operator" && awsEKSEnabled {
-				if err := installCalico(n, k, privateParams, false, true); err != nil {
-					return err
-				}
-				// Create namespace for tigera-operator in workload cluster
-				c = "kubectl --kubeconfig " + k + " create ns " + entry.Namespace
-				_, err = commons.ExecuteCommand(n, c, 5, 3)
-				if err != nil {
-					return errors.Wrap(err, "failed to create "+entry.Namespace+" namespace")
-				}
-			}
+
 			if err := configureHelmRelease(n, k, "flux2_helmrelease.tmpl", fluxHelmReleaseParams, keosClusterSpec.HelmRepository); err != nil {
 				return err
 			}

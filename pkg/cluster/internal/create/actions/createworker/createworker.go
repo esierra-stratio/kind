@@ -725,7 +725,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Reconciling the existing Helm charts in workload cluster 🧲")
 		defer ctx.Status.End(false)
 		
-		err = reconcileCharts(n, kubeconfigPath, privateParams, a.keosCluster.Spec, chartsList, awsEKSEnabled)
+		err = reconcileCharts(n, kubeconfigPath, privateParams, a.keosCluster.Spec, chartsList)
 		if err != nil {
 			return errors.Wrap(err, "failed to reconcile with Flux the existing Helm charts in workload cluster")
 		}
