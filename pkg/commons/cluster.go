@@ -37,7 +37,7 @@ var DeviceNameRegex = "^/dev/(sd[a-z]|xvd([a-d]|[a-d][a-z]|[e-z]))$"
 
 var AWSVolumeType = "gp3"
 var AzureVMsVolumeType = "Standard_LRS"
-var GCPVMsVolumeType = "pd-standard"
+var GCPVMsVolumeType = "pd-ssd"
 
 type Resource struct {
 	APIVersion string      `yaml:"apiVersion" validate:"required"`

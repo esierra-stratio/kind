@@ -49,12 +49,11 @@ type GCPBuilder struct {
 	csiNamespace     string
 }
 
-
 var googleCharts = ChartsDictionary{
 	Charts: map[string]map[string]map[string]commons.ChartEntry{
 		"28": {
 			"managed": {
-				"tigera-operator":    {Repository: "https://docs.projectcalico.org/charts", Version: "v3.27.3", Namespace: "tigera-operator", Pull: true},
+				"tigera-operator": {Repository: "https://docs.projectcalico.org/charts", Version: "v3.27.3", Namespace: "tigera-operator", Pull: true},
 			},
 			"unmanaged": {
 				"cluster-autoscaler": {Repository: "https://kubernetes.github.io/autoscaler", Version: "9.34.1", Namespace: "kube-system", Pull: false},
@@ -63,7 +62,7 @@ var googleCharts = ChartsDictionary{
 		},
 		"29": {
 			"managed": {
-				"tigera-operator":    {Repository: "https://docs.projectcalico.org/charts", Version: "v3.27.3", Namespace: "tigera-operator", Pull: true},
+				"tigera-operator": {Repository: "https://docs.projectcalico.org/charts", Version: "v3.27.3", Namespace: "tigera-operator", Pull: true},
 			},
 			"unmanaged": {
 				"cluster-autoscaler": {Repository: "https://kubernetes.github.io/autoscaler", Version: "9.35.0", Namespace: "kube-system", Pull: false},
@@ -72,13 +71,13 @@ var googleCharts = ChartsDictionary{
 		},
 		"30": {
 			"managed": {
-				"tigera-operator":    {Repository: "https://docs.projectcalico.org/charts", Version: "v3.27.3", Namespace: "tigera-operator", Pull: true},
+				"tigera-operator": {Repository: "https://docs.projectcalico.org/charts", Version: "v3.27.3", Namespace: "tigera-operator", Pull: true},
 			},
 			"unmanaged": {
 				// "default" repository defaults to the descriptor Helm repository
 				"gcp-cloud-controller-manager": {Repository: "default", Version: "1.30.0", Namespace: "kube-system", Pull: true},
-				"cluster-autoscaler": {Repository: "https://kubernetes.github.io/autoscaler", Version: "9.37.0", Namespace: "kube-system", Pull: false},
-				"tigera-operator":    {Repository: "https://docs.projectcalico.org/charts", Version: "v3.27.3", Namespace: "tigera-operator", Pull: true},
+				"cluster-autoscaler":           {Repository: "https://kubernetes.github.io/autoscaler", Version: "9.37.0", Namespace: "kube-system", Pull: false},
+				"tigera-operator":              {Repository: "https://docs.projectcalico.org/charts", Version: "v3.27.3", Namespace: "tigera-operator", Pull: true},
 			},
 		},
 	},
@@ -131,11 +130,7 @@ func (b *GCPBuilder) setSC(p ProviderParams) {
 	b.scProvisioner = "pd.csi.storage.gke.io"
 
 	if b.scParameters.Type == "" {
-		if p.StorageClass.Class == "premium" {
-			b.scParameters.Type = "pd-ssd"
-		} else {
-			b.scParameters.Type = "pd-standard"
-		}
+		b.scParameters.Type = "pd-ssd"
 	}
 
 	if p.StorageClass.EncryptionKey != "" {

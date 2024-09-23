@@ -72,6 +72,10 @@ func EnsureSecretsFile(spec KeosSpec, vaultPassword string, clusterCredentials C
 	helmRepository := clusterCredentials.HelmRepositoryCredentials
 	github_token := clusterCredentials.GithubToken
 
+	if spec.InfraProvider == "gcp" || spec.ControlPlane.Managed {
+		credentials["region"] = spec.Region
+	}
+
 	_, err = os.Stat(secretPath)
 	if err != nil {
 		secretMap := map[string]interface{}{}
